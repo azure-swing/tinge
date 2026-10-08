@@ -1,0 +1,29 @@
+[package]
+name = "vibecolor-io"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["raw"]
+raw = ["dep:rawler"]
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+schemars.workspace = true
+image.workspace = true
+moxcms = { version = "0.8.1", features = ["extended_range"] }
+png = "0.18"
+exr = "=1.74.2"
+tiff = "=0.11.3"
+rawler = { version = "0.8", optional = true }
+tempfile.workspace = true
+blake3.workspace = true
+vibecolor-core.workspace = true
+vibecolor-color.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+crc32fast = "1.5"

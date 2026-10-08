@@ -1,0 +1,27 @@
+ocio_profile_version: 2
+environment:
+  GRADE: neutral
+search_path: luts
+roles:
+  scene_linear: linear
+file_rules:
+  - !<Rule> {name: Default, colorspace: linear}
+displays:
+  Photo sRGB:
+    - !<View> {name: Standard, colorspace: encoded}
+colorspaces:
+  - !<ColorSpace>
+    name: linear
+    bitdepth: 32f
+    isdata: false
+    allocation: uniform
+  - !<ColorSpace>
+    name: encoded
+    bitdepth: 32f
+    isdata: false
+    allocation: uniform
+    from_scene_reference: !<GroupTransform>
+      children:
+        - !<FileTransform> {src: "./$GRADE/look.cube", interpolation: linear}
+        - !<MatrixTransform> {matrix: [0.4123908, 0.35758433, 0.1804808, 0, 0.212639, 0.71516865, 0.07219231, 0, 0.01933082, 0.11919478, 0.95053214, 0, 0, 0, 0, 1]}
+        - !<BuiltinTransform> {style: "DISPLAY - CIE-XYZ-D65_to_sRGB"}

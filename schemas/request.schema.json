@@ -1,0 +1,4595 @@
+{
+  "$defs": {
+    "BakeOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "domain_max": {
+          "default": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "domain_min": {
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "input_encoding": {
+          "$ref": "#/$defs/LutEncoding",
+          "default": {
+            "space": {
+              "primaries": "srgb",
+              "transfer": "srgb"
+            },
+            "type": "standard"
+          }
+        },
+        "linear_unit_nits": {
+          "default": null,
+          "format": "float",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "output_encoding": {
+          "$ref": "#/$defs/LutEncoding",
+          "default": {
+            "space": {
+              "primaries": "srgb",
+              "transfer": "srgb"
+            },
+            "type": "standard"
+          }
+        },
+        "size": {
+          "default": 33,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "title": {
+          "default": "VibeColor RGB grade",
+          "type": "string"
+        },
+        "validation_interpolation": {
+          "$ref": "#/$defs/LutInterpolation",
+          "default": "tetrahedral"
+        },
+        "validation_samples": {
+          "default": 2048,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "BelowBlack": {
+      "enum": [
+        "clip",
+        "preserve"
+      ],
+      "type": "string"
+    },
+    "BlendMode": {
+      "enum": [
+        "normal",
+        "add",
+        "multiply",
+        "screen",
+        "overlay",
+        "difference"
+      ],
+      "type": "string"
+    },
+    "CdlCorrection": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "default": "",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/CdlMetadata",
+          "default": {
+            "descriptions": [],
+            "input_descriptions": [],
+            "sat_descriptions": [],
+            "sop_descriptions": [],
+            "viewing_descriptions": []
+          }
+        },
+        "offset": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "power": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "saturation": {
+          "format": "double",
+          "type": "number"
+        },
+        "slope": {
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "slope",
+        "offset",
+        "power",
+        "saturation"
+      ],
+      "type": "object"
+    },
+    "CdlDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "corrections": {
+          "items": {
+            "$ref": "#/$defs/CdlCorrection"
+          },
+          "type": "array"
+        },
+        "format": {
+          "$ref": "#/$defs/CdlFormat"
+        },
+        "metadata": {
+          "$ref": "#/$defs/CdlMetadata",
+          "default": {
+            "descriptions": [],
+            "input_descriptions": [],
+            "sat_descriptions": [],
+            "sop_descriptions": [],
+            "viewing_descriptions": []
+          }
+        }
+      },
+      "required": [
+        "format",
+        "corrections"
+      ],
+      "type": "object"
+    },
+    "CdlExportSource": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "document": {
+              "$ref": "#/$defs/CdlDocument"
+            },
+            "type": {
+              "const": "document",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "document"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "nodes": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "project": {
+              "type": "string"
+            },
+            "revision": {
+              "default": null,
+              "format": "uint64",
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "type": {
+              "const": "project",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "project",
+            "nodes"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "CdlFormat": {
+      "enum": [
+        "cc",
+        "ccc",
+        "cdl"
+      ],
+      "type": "string"
+    },
+    "CdlMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "descriptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "input_descriptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "sat_descriptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "sop_descriptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "viewing_descriptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "CdlProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "collection_metadata": {
+          "$ref": "#/$defs/CdlMetadata"
+        },
+        "correction_id": {
+          "type": "string"
+        },
+        "correction_index": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "correction_metadata": {
+          "$ref": "#/$defs/CdlMetadata"
+        },
+        "source_format": {
+          "$ref": "#/$defs/CdlFormat"
+        },
+        "source_hash": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_hash",
+        "source_format",
+        "correction_id",
+        "correction_index",
+        "collection_metadata",
+        "correction_metadata"
+      ],
+      "type": "object"
+    },
+    "CdlSelector": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "const": "id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "index": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": {
+              "const": "index",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "index"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "CdlStyle": {
+      "enum": [
+        "asc",
+        "no_clamp"
+      ],
+      "type": "string"
+    },
+    "ColorSpace": {
+      "additionalProperties": false,
+      "properties": {
+        "primaries": {
+          "$ref": "#/$defs/Primaries",
+          "default": "srgb"
+        },
+        "transfer": {
+          "$ref": "#/$defs/Transfer",
+          "default": "srgb"
+        }
+      },
+      "type": "object"
+    },
+    "CombineMode": {
+      "enum": [
+        "union",
+        "intersect",
+        "subtract"
+      ],
+      "type": "string"
+    },
+    "ConfigSource": {
+      "description": "Versioned names make built-in configs reproducible across OCIO upgrades.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "type": {
+              "const": "builtin",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "name"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "type": {
+              "const": "file",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "path"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Immutable OCIOZ package, verified before any cache or processor is used.",
+          "properties": {
+            "hash": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "type": {
+              "const": "frozen",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "path",
+            "hash"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "CurveChannel": {
+      "enum": [
+        "rgb",
+        "red",
+        "green",
+        "blue",
+        "luma"
+      ],
+      "type": "string"
+    },
+    "CutoutOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "decontaminate": {
+          "default": 0.0,
+          "description": "Local foreground/background color reconstruction; 0 preserves RGB, 1 applies fully.",
+          "format": "float",
+          "type": "number"
+        },
+        "despill": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Despill"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "feather": {
+          "default": 0.0,
+          "description": "Gaussian sigma in original input pixels, applied after refinement/grow.",
+          "format": "float",
+          "type": "number"
+        },
+        "grow": {
+          "default": 0,
+          "description": "Signed square-kernel dilation/erosion radius in original input pixels.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "output": {
+          "$ref": "#/$defs/CutoutOutput",
+          "default": "cutout"
+        },
+        "refinement": {
+          "$ref": "#/$defs/Refinement",
+          "default": {
+            "iterations": 120,
+            "max_edge": 1024,
+            "method": "none",
+            "radius": 3,
+            "space": "linear",
+            "tolerance": 1E-06
+          }
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        }
+      },
+      "required": [
+        "selection"
+      ],
+      "type": "object"
+    },
+    "CutoutOutput": {
+      "enum": [
+        "cutout",
+        "matte"
+      ],
+      "type": "string"
+    },
+    "Despill": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "format": "float",
+          "type": "number"
+        },
+        "color": {
+          "description": "Encoded sRGB screen color; must have a dominant color channel.",
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      },
+      "required": [
+        "color",
+        "amount"
+      ],
+      "type": "object"
+    },
+    "DisplayTarget": {
+      "enum": [
+        "srgb",
+        "display_p3",
+        "rec2100_pq"
+      ],
+      "type": "string"
+    },
+    "Edit": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "node": {
+              "$ref": "#/$defs/Node"
+            },
+            "type": {
+              "const": "upsert_node",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "node"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "const": "remove_node",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "const": "set_output",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "mask": {
+              "$ref": "#/$defs/Mask"
+            },
+            "type": {
+              "const": "set_mask",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "mask"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "const": "remove_mask",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "recipe": {
+              "$ref": "#/$defs/Recipe"
+            },
+            "type": {
+              "const": "replace_recipe",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "recipe"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "pipeline": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Pipeline"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "set_color_pipeline",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "options": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RawDevelopOptions"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "const": "set_raw_develop",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "HslBand": {
+      "additionalProperties": false,
+      "properties": {
+        "hue": {
+          "format": "float",
+          "type": "number"
+        },
+        "hue_shift": {
+          "default": 0.0,
+          "format": "float",
+          "type": "number"
+        },
+        "luminance": {
+          "default": 1.0,
+          "format": "float",
+          "type": "number"
+        },
+        "saturation": {
+          "default": 1.0,
+          "format": "float",
+          "type": "number"
+        },
+        "width": {
+          "format": "float",
+          "type": "number"
+        }
+      },
+      "required": [
+        "hue",
+        "width"
+      ],
+      "type": "object"
+    },
+    "HueCurveMode": {
+      "enum": [
+        "hue_vs_hue",
+        "hue_vs_sat",
+        "hue_vs_lum",
+        "lum_vs_sat",
+        "sat_vs_sat",
+        "sat_vs_lum"
+      ],
+      "type": "string"
+    },
+    "InputEncoding": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "Existing ICC / RAW / explicitly declared input colorimetry to working RGB.",
+          "properties": {
+            "type": {
+              "const": "managed",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Stored rendered RGB values. ICC and transfer decoding are bypassed.",
+          "properties": {
+            "color_space": {
+              "type": "string"
+            },
+            "type": {
+              "const": "encoded",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "color_space"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "LutBakeSource": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "color_pipeline": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Pipeline"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "recipe": {
+              "$ref": "#/$defs/Recipe"
+            },
+            "type": {
+              "const": "recipe",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "recipe"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "project": {
+              "type": "string"
+            },
+            "revision": {
+              "default": null,
+              "format": "uint64",
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "type": {
+              "const": "project",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "project"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "LutDomain": {
+      "enum": [
+        "linear",
+        "srgb"
+      ],
+      "type": "string"
+    },
+    "LutEncoding": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "space": {
+              "$ref": "#/$defs/ColorSpace"
+            },
+            "type": {
+              "const": "standard",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "space"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "color_space": {
+              "type": "string"
+            },
+            "type": {
+              "const": "ocio",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "color_space"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Output only: the pipeline's selected display/view and encoding.",
+          "properties": {
+            "type": {
+              "const": "display",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "LutInterpolation": {
+      "enum": [
+        "trilinear",
+        "tetrahedral"
+      ],
+      "type": "string"
+    },
+    "Mask": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "center": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "feather": {
+              "format": "float",
+              "type": "number"
+            },
+            "radius": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "rotation": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "ellipse",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "center",
+            "radius",
+            "feather"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "feather": {
+              "format": "float",
+              "type": "number"
+            },
+            "max": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "min": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "type": {
+              "const": "rectangle",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "min",
+            "max",
+            "feather"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "feather": {
+              "format": "float",
+              "type": "number"
+            },
+            "points": {
+              "items": {
+                "items": {
+                  "format": "float",
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "type": {
+              "const": "polygon",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "points",
+            "feather"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "end": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "start": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "type": {
+              "const": "linear_gradient",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "start",
+            "end"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "hardness": {
+              "format": "float",
+              "type": "number"
+            },
+            "points": {
+              "items": {
+                "items": {
+                  "format": "float",
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "radius": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "brush",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "points",
+            "radius",
+            "hardness"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "max": {
+              "format": "float",
+              "type": "number"
+            },
+            "min": {
+              "format": "float",
+              "type": "number"
+            },
+            "softness": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "luma_range",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "min",
+            "max",
+            "softness"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "hue": {
+              "format": "float",
+              "type": "number"
+            },
+            "hue_width": {
+              "format": "float",
+              "type": "number"
+            },
+            "luminance": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "saturation": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "softness": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "hsl_range",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "hue",
+            "hue_width",
+            "saturation",
+            "luminance",
+            "softness"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Imported gray/alpha matte. Path is relative to recipe/project directory.",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "type": {
+              "const": "bitmap",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "path"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "masks": {
+              "items": {
+                "$ref": "#/$defs/Mask"
+              },
+              "type": "array"
+            },
+            "mode": {
+              "$ref": "#/$defs/CombineMode"
+            },
+            "type": {
+              "const": "combine",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "mode",
+            "masks"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "mask": {
+              "$ref": "#/$defs/Mask"
+            },
+            "type": {
+              "const": "invert",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "mask"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "MattingSpace": {
+      "oneOf": [
+        {
+          "const": "linear",
+          "description": "Physical alpha mixtures are linear; normalize HDR magnitude without clipping.",
+          "type": "string"
+        },
+        {
+          "const": "srgb",
+          "description": "Compatibility with matting workflows operating on encoded sRGB samples.",
+          "type": "string"
+        }
+      ]
+    },
+    "Node": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "inputs": {
+          "default": [
+            "source"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "mask": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mix": {
+          "default": 1.0,
+          "format": "float",
+          "type": "number"
+        },
+        "op": {
+          "$ref": "#/$defs/Operation"
+        }
+      },
+      "required": [
+        "id",
+        "op"
+      ],
+      "type": "object"
+    },
+    "NodeGrade": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "OCIO owns each Look's process space and context-dependent dependencies.",
+          "properties": {
+            "inverse": {
+              "default": false,
+              "type": "boolean"
+            },
+            "looks": {
+              "type": "string"
+            },
+            "type": {
+              "const": "look",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "looks"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Native ASC v1.2 SOP/saturation, with an explicit signal encoding.",
+          "properties": {
+            "color_space": {
+              "type": "string"
+            },
+            "exchange": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/CdlProvenance"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "inverse": {
+              "default": false,
+              "type": "boolean"
+            },
+            "offset": {
+              "items": {
+                "format": "double",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "power": {
+              "items": {
+                "format": "double",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "saturation": {
+              "format": "double",
+              "type": "number"
+            },
+            "slope": {
+              "items": {
+                "format": "double",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "style": {
+              "$ref": "#/$defs/CdlStyle",
+              "default": "no_clamp"
+            },
+            "type": {
+              "const": "cdl",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "color_space",
+            "slope",
+            "offset",
+            "power",
+            "saturation"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "RGB affine transform; alpha cannot contribute to RGB or be modified.",
+          "properties": {
+            "color_space": {
+              "type": "string"
+            },
+            "inverse": {
+              "default": false,
+              "type": "boolean"
+            },
+            "matrix": {
+              "items": {
+                "items": {
+                  "format": "double",
+                  "type": "number"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "type": "array"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "offset": {
+              "items": {
+                "format": "double",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "type": {
+              "const": "matrix",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "color_space",
+            "matrix",
+            "offset"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Operation": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "Native weight-free keying / interactive segmentation / alpha matting.",
+          "properties": {
+            "options": {
+              "$ref": "#/$defs/CutoutOptions"
+            },
+            "type": {
+              "const": "cutout",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "options"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Native OCIO grade in an explicit process space; requires color_pipeline.",
+          "properties": {
+            "grade": {
+              "$ref": "#/$defs/NodeGrade"
+            },
+            "type": {
+              "const": "ocio_grade",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "grade"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "stops": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "exposure",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "stops"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Gains in scene-linear RGB, green normalized by the caller when desired.",
+          "properties": {
+            "gains": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "type": {
+              "const": "white_balance",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "gains"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "contrast": {
+              "default": 1.0,
+              "format": "float",
+              "type": "number"
+            },
+            "exposure": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            },
+            "gain": {
+              "default": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "gamma": {
+              "default": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "lift": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "offset": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "pivot": {
+              "default": 0.18000000715255737,
+              "format": "float",
+              "type": "number"
+            },
+            "saturation": {
+              "default": 1.0,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "primary",
+              "type": "string"
+            },
+            "vibrance": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Lightroom-style independent tone controls; values in [-1,1].",
+          "properties": {
+            "blacks": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            },
+            "highlights": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            },
+            "shadows": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "tone",
+              "type": "string"
+            },
+            "whites": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "offset": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "power": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "saturation": {
+              "default": 1.0,
+              "format": "float",
+              "type": "number"
+            },
+            "slope": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "type": {
+              "const": "cdl",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "slope",
+            "offset",
+            "power"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "falloff": {
+              "default": 0.20000000298023224,
+              "format": "float",
+              "type": "number"
+            },
+            "high": {
+              "default": 0.75,
+              "format": "float",
+              "type": "number"
+            },
+            "highlights": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "low": {
+              "default": 0.25,
+              "format": "float",
+              "type": "number"
+            },
+            "midtones": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "shadows": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "type": {
+              "const": "log_wheels",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "shadows",
+            "midtones",
+            "highlights"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "EV range is relative to linear 18% gray.",
+          "properties": {
+            "color": {
+              "default": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "falloff": {
+              "default": 0.20000000298023224,
+              "format": "float",
+              "type": "number"
+            },
+            "max_ev": {
+              "format": "float",
+              "type": "number"
+            },
+            "min_ev": {
+              "format": "float",
+              "type": "number"
+            },
+            "stops": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "hdr_zone",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "min_ev",
+            "max_ev",
+            "stops"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "channel": {
+              "$ref": "#/$defs/CurveChannel"
+            },
+            "points": {
+              "items": {
+                "items": {
+                  "format": "float",
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "type": {
+              "const": "curves",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "channel",
+            "points"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "$ref": "#/$defs/HueCurveMode"
+            },
+            "points": {
+              "items": {
+                "items": {
+                  "format": "float",
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "type": {
+              "const": "hue_curves",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "mode",
+            "points"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "bands": {
+              "items": {
+                "$ref": "#/$defs/HslBand"
+              },
+              "type": "array"
+            },
+            "type": {
+              "const": "hsl",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "bands"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "points": {
+              "items": {
+                "$ref": "#/$defs/WarpPoint"
+              },
+              "type": "array"
+            },
+            "type": {
+              "const": "color_warper",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "points"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "matrix": {
+              "items": {
+                "items": {
+                  "format": "float",
+                  "type": "number"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "type": "array"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "preserve_luminance": {
+              "default": false,
+              "type": "boolean"
+            },
+            "type": {
+              "const": "rgb_mixer",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "matrix"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "balance": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            },
+            "highlights": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "shadows": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "strength": {
+              "default": 1.0,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "split_tone",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "shadows",
+            "highlights"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "domain": {
+              "$ref": "#/$defs/LutDomain",
+              "default": "srgb"
+            },
+            "interpolation": {
+              "$ref": "#/$defs/LutInterpolation"
+            },
+            "path": {
+              "type": "string"
+            },
+            "type": {
+              "const": "lut",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "path"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "method": {
+              "$ref": "#/$defs/ToneMap"
+            },
+            "type": {
+              "const": "tone_map",
+              "type": "string"
+            },
+            "white": {
+              "default": 1.0,
+              "format": "float",
+              "type": "number"
+            }
+          },
+          "required": [
+            "type",
+            "method"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "softness": {
+              "default": 0.5,
+              "format": "float",
+              "type": "number"
+            },
+            "threshold": {
+              "default": 1.0,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "gamut_compress",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "radius": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "blur",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "radius"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "format": "float",
+              "type": "number"
+            },
+            "radius": {
+              "format": "float",
+              "type": "number"
+            },
+            "threshold": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "sharpen",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "radius",
+            "amount"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "format": "float",
+              "type": "number"
+            },
+            "radius": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "clarity",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "radius",
+            "amount"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "radius": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "range_sigma": {
+              "format": "float",
+              "type": "number"
+            },
+            "spatial_sigma": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "denoise",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "radius",
+            "spatial_sigma",
+            "range_sigma"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "format": "float",
+              "type": "number"
+            },
+            "center": {
+              "default": [
+                0.5,
+                0.5
+              ],
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "feather": {
+              "default": 0.20000000298023224,
+              "format": "float",
+              "type": "number"
+            },
+            "radius": {
+              "default": 1.0,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "vignette",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "amount"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "format": "float",
+              "type": "number"
+            },
+            "monochrome": {
+              "default": false,
+              "type": "boolean"
+            },
+            "seed": {
+              "format": "uint64",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": {
+              "const": "grain",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "amount",
+            "seed"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "format": "float",
+              "type": "number"
+            },
+            "radius": {
+              "format": "float",
+              "type": "number"
+            },
+            "threshold": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "glow",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "radius",
+            "threshold",
+            "amount"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "height": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": {
+              "const": "crop",
+              "type": "string"
+            },
+            "width": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "x": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "y": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type",
+            "x",
+            "y",
+            "width",
+            "height"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "height": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": {
+              "const": "resize",
+              "type": "string"
+            },
+            "width": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type",
+            "width",
+            "height"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "degrees": {
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "rotate",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "degrees"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "center": {
+              "default": [
+                0.5,
+                0.5
+              ],
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "k1": {
+              "format": "float",
+              "type": "number"
+            },
+            "k2": {
+              "default": 0.0,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "lens_distortion",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "k1"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Copy source region over target; optional feather blends the boundary.",
+          "properties": {
+            "feather": {
+              "default": 0.20000000298023224,
+              "format": "float",
+              "type": "number"
+            },
+            "radius": {
+              "format": "float",
+              "type": "number"
+            },
+            "source": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "target": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "type": {
+              "const": "clone",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "source",
+            "target",
+            "radius"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Two inputs. First is base; second is foreground, mixed using node mix/mask.",
+          "properties": {
+            "mode": {
+              "$ref": "#/$defs/BlendMode"
+            },
+            "type": {
+              "const": "blend",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "mode"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Pipeline": {
+      "additionalProperties": false,
+      "description": "An input/display chain around scene-linear grading.\nDisplay outputs are tagged with the corresponding file colorimetry.",
+      "properties": {
+        "config": {
+          "$ref": "#/$defs/PipelineConfig"
+        },
+        "context": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Explicit overrides; absent values use authored defaults, never ambient env.",
+          "type": "object"
+        },
+        "display": {
+          "$ref": "#/$defs/DisplayTarget"
+        },
+        "display_name": {
+          "description": "Custom config display names; encoding remains owned by `display`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "engine_version": {
+          "default": "2.5.2",
+          "type": "string"
+        },
+        "input": {
+          "$ref": "#/$defs/InputEncoding",
+          "default": {
+            "type": "managed"
+          }
+        },
+        "preview_display_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "preview_view": {
+          "description": "Required for non-sRGB displays; agent previews remain SDR sRGB.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "view": {
+          "type": "string"
+        },
+        "working_encoding": {
+          "$ref": "#/$defs/ColorSpace"
+        },
+        "working_space": {
+          "description": "OCIO color-space name corresponding to the declared linear encoding.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "config",
+        "view"
+      ],
+      "type": "object"
+    },
+    "PipelineConfig": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/ConfigSource"
+        }
+      ],
+      "description": "Legacy string configs remain byte-for-byte compatible in revision hashes."
+    },
+    "Primaries": {
+      "enum": [
+        "srgb",
+        "display_p3",
+        "rec2020",
+        "aces_cg"
+      ],
+      "type": "string"
+    },
+    "RawCrop": {
+      "enum": [
+        "sensor",
+        "active",
+        "default"
+      ],
+      "type": "string"
+    },
+    "RawDevelopOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm_version": {
+          "default": 1,
+          "description": "Version 1 applies sensor normalization and WB before demosaicing.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "apply_orientation": {
+          "default": true,
+          "type": "boolean"
+        },
+        "below_black": {
+          "$ref": "#/$defs/BelowBlack",
+          "default": "clip"
+        },
+        "black_levels": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SensorLevels"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "calibration_illuminant": {
+          "default": null,
+          "description": "DNG/EXIF illuminant numeric tag, selecting a decoder-supplied camera matrix.",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "crop": {
+          "$ref": "#/$defs/RawCrop",
+          "default": "default"
+        },
+        "exposure_ev": {
+          "default": 0.0,
+          "description": "Applied after demosaicing and camera conversion; does not change sensor saturation.",
+          "format": "float",
+          "type": "number"
+        },
+        "white_balance": {
+          "$ref": "#/$defs/RawWhiteBalance",
+          "default": {
+            "type": "as_shot"
+          }
+        },
+        "white_levels": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SensorLevels"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "RawWhiteBalance": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "Use camera metadata; report an explicit D65 fallback when absent.",
+          "properties": {
+            "type": {
+              "const": "as_shot",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "unity",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Camera plane order, normalized to plane 1. Three or four positive gains.",
+          "properties": {
+            "gains": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": {
+              "const": "camera_gains",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "gains"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "CIE 1931 xy white; computed with the selected D65-adapted camera matrix.",
+          "properties": {
+            "type": {
+              "const": "chromaticity",
+              "type": "string"
+            },
+            "xy": {
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": [
+            "type",
+            "xy"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Kang 2002 Planckian-locus fit with signed normal offset in CIE 1960 uv.\nPositive Duv describes a greener source white, compensated by camera gains.",
+          "properties": {
+            "kelvin": {
+              "format": "double",
+              "type": "number"
+            },
+            "tint_duv": {
+              "default": 0.0,
+              "format": "double",
+              "type": "number"
+            },
+            "type": {
+              "const": "temperature",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "kelvin"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Recipe": {
+      "additionalProperties": false,
+      "properties": {
+        "masks": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Mask"
+          },
+          "default": {},
+          "type": "object"
+        },
+        "nodes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Node"
+          },
+          "type": "array"
+        },
+        "output": {
+          "default": "source",
+          "description": "Node ID, or \"source\" for the unmodified image.",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": 1,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Refinement": {
+      "additionalProperties": false,
+      "properties": {
+        "iterations": {
+          "default": 120,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_edge": {
+          "default": 1024,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "method": {
+          "$ref": "#/$defs/RefinementMethod",
+          "default": "none"
+        },
+        "radius": {
+          "default": 3,
+          "description": "Unknown boundary band in refinement-resolution pixels (ignored for explicit trimaps).",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "space": {
+          "$ref": "#/$defs/MattingSpace",
+          "default": "linear"
+        },
+        "tolerance": {
+          "default": 1E-06,
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "RefinementMethod": {
+      "enum": [
+        "none",
+        "closed_form"
+      ],
+      "type": "string"
+    },
+    "Role": {
+      "enum": [
+        "preview",
+        "draft",
+        "export"
+      ],
+      "type": "string"
+    },
+    "SchemaKind": {
+      "enum": [
+        "request",
+        "recipe",
+        "edits"
+      ],
+      "type": "string"
+    },
+    "Selection": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "Distance in clamped, encoded sRGB; colors/samples describe the background.",
+          "properties": {
+            "color": {
+              "default": null,
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": [
+                "array",
+                "null"
+              ]
+            },
+            "samples": {
+              "default": [],
+              "items": {
+                "items": {
+                  "format": "float",
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "softness": {
+              "default": 0.11999999731779099,
+              "format": "float",
+              "type": "number"
+            },
+            "tolerance": {
+              "default": 0.07999999821186066,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "color",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "background": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/Stroke"
+              },
+              "type": "array"
+            },
+            "foreground": {
+              "default": [],
+              "items": {
+                "$ref": "#/$defs/Stroke"
+              },
+              "type": "array"
+            },
+            "iterations": {
+              "default": 5,
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "max_edge": {
+              "default": 512,
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "rect": {
+              "default": null,
+              "description": "[min_x, min_y, max_x, max_y], normalized; outside is certain background.",
+              "items": {
+                "format": "float",
+                "type": "number"
+              },
+              "maxItems": 4,
+              "minItems": 4,
+              "type": [
+                "array",
+                "null"
+              ]
+            },
+            "smoothness": {
+              "default": 50.0,
+              "format": "float",
+              "type": "number"
+            },
+            "type": {
+              "const": "grab_cut",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "mask": {
+              "$ref": "#/$defs/Mask"
+            },
+            "type": {
+              "const": "mask",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "mask"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Grayscale data: <=0.01 background, >=0.99 foreground, otherwise unknown.",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "type": {
+              "const": "trimap",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "path"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "SensorLevels": {
+      "additionalProperties": false,
+      "properties": {
+        "repeat": {
+          "description": "[columns, rows], anchored at the uncropped sensor origin.",
+          "items": {
+            "format": "uint",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "values": {
+          "description": "Row-major cells with interleaved components per pixel; native sensor units.",
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "repeat",
+        "values"
+      ],
+      "type": "object"
+    },
+    "Stroke": {
+      "additionalProperties": false,
+      "properties": {
+        "points": {
+          "items": {
+            "items": {
+              "format": "float",
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "radius": {
+          "default": 0.009999999776482582,
+          "description": "Radius relative to the shorter image dimension; strokes join consecutive points.",
+          "format": "float",
+          "type": "number"
+        }
+      },
+      "required": [
+        "points"
+      ],
+      "type": "object"
+    },
+    "ToneMap": {
+      "enum": [
+        "reinhard",
+        "aces_fit"
+      ],
+      "type": "string"
+    },
+    "Transfer": {
+      "oneOf": [
+        {
+          "enum": [
+            "linear",
+            "srgb",
+            "gamma22",
+            "gamma24"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "pq",
+          "description": "ST 2084, normalized to 10,000 nits. Linear 1 = 10,000 nits.",
+          "type": "string"
+        },
+        {
+          "const": "hlg",
+          "description": "Scene-referred HLG OETF only; no display OOTF.",
+          "type": "string"
+        }
+      ]
+    },
+    "Transform": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "destination": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "type": {
+              "const": "color_space",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "source",
+            "destination"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "display": {
+              "type": "string"
+            },
+            "inverse": {
+              "default": false,
+              "type": "boolean"
+            },
+            "source": {
+              "type": "string"
+            },
+            "type": {
+              "const": "display_view",
+              "type": "string"
+            },
+            "view": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "source",
+            "display",
+            "view"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Input and output use the same source encoding; grade owns its process space.",
+          "properties": {
+            "grade": {
+              "$ref": "#/$defs/NodeGrade"
+            },
+            "source": {
+              "type": "string"
+            },
+            "type": {
+              "const": "grade",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "source",
+            "grade"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "WarpPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "radius": {
+          "format": "float",
+          "type": "number"
+        },
+        "to": {
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "radius"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "selections",
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "project"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "selection_save",
+          "type": "string"
+        },
+        "expect_revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
+        },
+        "note": {
+          "default": "",
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "default": null,
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "expect_revision",
+        "mask"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "asset_base": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bit_depth": {
+          "default": null,
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "color_pipeline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Pipeline"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "command": {
+          "const": "cutout",
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "input_space": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorSpace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "linear_unit_nits": {
+          "default": null,
+          "format": "float",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "matte": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "options": {
+          "$ref": "#/$defs/CutoutOptions"
+        },
+        "output": {
+          "type": "string"
+        },
+        "output_space": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorSpace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "overwrite": {
+          "default": false,
+          "type": "boolean"
+        },
+        "raw_develop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RawDevelopOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "command",
+        "input",
+        "output",
+        "options"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "cdl_inspect",
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "input"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "color_space": {
+          "type": "string"
+        },
+        "command": {
+          "const": "cdl_import",
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "inverse": {
+          "default": false,
+          "type": "boolean"
+        },
+        "selector": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CdlSelector"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "style": {
+          "$ref": "#/$defs/CdlStyle"
+        }
+      },
+      "required": [
+        "command",
+        "input",
+        "color_space",
+        "style"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "cdl_export",
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "overwrite": {
+          "default": false,
+          "type": "boolean"
+        },
+        "source": {
+          "$ref": "#/$defs/CdlExportSource"
+        }
+      },
+      "required": [
+        "command",
+        "source",
+        "output"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "lut_inspect",
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "input"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "asset_base": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "command": {
+          "const": "lut_bake",
+          "type": "string"
+        },
+        "options": {
+          "$ref": "#/$defs/BakeOptions",
+          "default": {
+            "domain_max": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "domain_min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "input_encoding": {
+              "space": {
+                "primaries": "srgb",
+                "transfer": "srgb"
+              },
+              "type": "standard"
+            },
+            "linear_unit_nits": null,
+            "output_encoding": {
+              "space": {
+                "primaries": "srgb",
+                "transfer": "srgb"
+              },
+              "type": "standard"
+            },
+            "size": 33,
+            "title": "VibeColor RGB grade",
+            "validation_interpolation": "tetrahedral",
+            "validation_samples": 2048
+          }
+        },
+        "output": {
+          "type": "string"
+        },
+        "overwrite": {
+          "default": false,
+          "type": "boolean"
+        },
+        "source": {
+          "$ref": "#/$defs/LutBakeSource"
+        }
+      },
+      "required": [
+        "command",
+        "source",
+        "output"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "capabilities",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "cleanup_plan",
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "revision"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "finalize",
+          "type": "string"
+        },
+        "expect_revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "expect_revision",
+        "revision"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "workfile_register",
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "file",
+        "revision",
+        "role"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "ocio_configs",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "ocio_inspect",
+          "type": "string"
+        },
+        "config": {
+          "$ref": "#/$defs/ConfigSource"
+        },
+        "context": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "type": "object"
+        }
+      },
+      "required": [
+        "command",
+        "config"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "ocio_transform",
+          "type": "string"
+        },
+        "config": {
+          "$ref": "#/$defs/ConfigSource"
+        },
+        "context": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "type": "object"
+        },
+        "pixels": {
+          "items": {
+            "items": {
+              "format": "float",
+              "type": "number"
+            },
+            "maxItems": 4,
+            "minItems": 4,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "transform": {
+          "$ref": "#/$defs/Transform"
+        }
+      },
+      "required": [
+        "command",
+        "config",
+        "transform",
+        "pixels"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "schema",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/SchemaKind",
+          "default": "request"
+        },
+        "target": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "inspect",
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "input"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "raw_plan",
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "options": {
+          "$ref": "#/$defs/RawDevelopOptions",
+          "default": {
+            "algorithm_version": 1,
+            "apply_orientation": true,
+            "below_black": "clip",
+            "black_levels": null,
+            "calibration_illuminant": null,
+            "crop": "default",
+            "exposure_ev": 0.0,
+            "white_balance": {
+              "type": "as_shot"
+            },
+            "white_levels": null
+          }
+        },
+        "sensor_points": {
+          "default": [],
+          "items": {
+            "items": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "command",
+        "input"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "color_pipeline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Pipeline"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "command": {
+          "const": "init",
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "input_space": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorSpace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "project": {
+          "type": "string"
+        },
+        "raw_develop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RawDevelopOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "command",
+        "input",
+        "project"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "show",
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "project"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "before_revision": {
+          "default": null,
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "command": {
+          "const": "project_info",
+          "type": "string"
+        },
+        "history_limit": {
+          "default": 10,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "include_recipe": {
+          "default": false,
+          "type": "boolean"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "default": null,
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "project"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "asset_base": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "command": {
+          "const": "edit_preview",
+          "type": "string"
+        },
+        "edits": {
+          "items": {
+            "$ref": "#/$defs/Edit"
+          },
+          "type": "array"
+        },
+        "expect_revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "label": {
+          "default": "agent edit",
+          "type": "string"
+        },
+        "max_edge": {
+          "default": 1600,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "output": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "overwrite": {
+          "default": false,
+          "type": "boolean"
+        },
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "expect_revision",
+        "edits"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "job_submit",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "request": {
+          "$ref": "#"
+        }
+      },
+      "required": [
+        "command",
+        "request"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "job_status",
+          "type": "string"
+        },
+        "job": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "job"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "job_cancel",
+          "type": "string"
+        },
+        "job": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "job"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "cache_budget_mib": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "command": {
+          "const": "configure",
+          "type": "string"
+        },
+        "idle_seconds": {
+          "default": 60,
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "cache_budget_mib"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "cache_info",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "viewer_open",
+          "type": "string"
+        },
+        "port": {
+          "default": 0,
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "project"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "viewer_status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "viewer_close",
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "project"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "asset_base": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "command": {
+          "const": "apply",
+          "type": "string"
+        },
+        "edits": {
+          "items": {
+            "$ref": "#/$defs/Edit"
+          },
+          "type": "array"
+        },
+        "expect_revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "label": {
+          "default": "agent edit",
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "expect_revision",
+        "edits"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "restore",
+          "type": "string"
+        },
+        "expect_revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "expect_revision",
+        "revision"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "checkout": {
+          "default": false,
+          "type": "boolean"
+        },
+        "command": {
+          "const": "branch",
+          "type": "string"
+        },
+        "expect_revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "expect_revision",
+        "name"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "tag",
+          "type": "string"
+        },
+        "expect_revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "expect_revision",
+        "name"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "color_pipeline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Pipeline"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "command": {
+          "const": "validate",
+          "type": "string"
+        },
+        "recipe": {
+          "$ref": "#/$defs/Recipe"
+        }
+      },
+      "required": [
+        "command",
+        "recipe"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "asset_base": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bit_depth": {
+          "default": null,
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "color_pipeline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Pipeline"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "command": {
+          "const": "grade",
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "input_space": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorSpace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "linear_unit_nits": {
+          "default": null,
+          "format": "float",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "output": {
+          "type": "string"
+        },
+        "output_space": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorSpace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "overwrite": {
+          "default": false,
+          "type": "boolean"
+        },
+        "raw_develop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RawDevelopOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "recipe": {
+          "$ref": "#/$defs/Recipe"
+        }
+      },
+      "required": [
+        "command",
+        "input",
+        "recipe",
+        "output"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "bit_depth": {
+          "default": null,
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "command": {
+          "const": "render",
+          "type": "string"
+        },
+        "linear_unit_nits": {
+          "default": null,
+          "format": "float",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max_edge": {
+          "default": null,
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "output": {
+          "type": "string"
+        },
+        "output_space": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorSpace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "overwrite": {
+          "default": false,
+          "type": "boolean"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "default": null,
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "temporary": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "output"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "asset_base": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "color_pipeline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Pipeline"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "command": {
+          "const": "analyze",
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "input_space": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorSpace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "raw_develop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RawDevelopOptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "recipe": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recipe"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "command",
+        "input"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "stats",
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "default": null,
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "scopes": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "command",
+        "project"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "preview",
+          "type": "string"
+        },
+        "include_analysis": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max_edge": {
+          "default": 1600,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "output": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "overwrite": {
+          "default": false,
+          "type": "boolean"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "default": null,
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "project"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "compare",
+          "type": "string"
+        },
+        "max_edge": {
+          "default": 1600,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "output": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "overwrite": {
+          "default": false,
+          "type": "boolean"
+        },
+        "project": {
+          "type": "string"
+        },
+        "revision": {
+          "default": null,
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "project"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "batch",
+          "type": "string"
+        },
+        "jobs": {
+          "items": {
+            "$ref": "#"
+          },
+          "type": "array"
+        },
+        "stop_on_error": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "command",
+        "jobs"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "const": "clear_cache",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "Request"
+}

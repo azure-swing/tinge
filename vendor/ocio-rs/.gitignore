@@ -1,0 +1,17 @@
+/target
+third_party/*
+!third_party/OpenColorIO
+.vscode/
+
+# Backup and temp files
+*.bak*
+*.orig
+*.patch
+
+# Migration tool build artifacts
+migrate.exe
+migrate.pdb
+old_lib_for_migration.txt
+
+# AI
+/.claude

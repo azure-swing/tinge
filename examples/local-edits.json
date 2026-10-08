@@ -1,0 +1,8 @@
+[
+  {"type":"set_mask","id":"subject","mask":{"type":"ellipse","center":[0.5,0.55],"radius":[0.28,0.36],"rotation":0,"feather":0.3}},
+  {"type":"set_mask","id":"sky","mask":{"type":"linear_gradient","start":[0.5,0.55],"end":[0.5,0.0]}},
+  {"type":"upsert_node","node":{"id":"balance","inputs":["source"],"op":{"type":"primary","exposure":0.2,"contrast":1.08,"saturation":0.94,"vibrance":0.1}}},
+  {"type":"upsert_node","node":{"id":"sky","inputs":["balance"],"op":{"type":"exposure","stops":-0.4},"mask":"sky"}},
+  {"type":"upsert_node","node":{"id":"subject","inputs":["sky"],"op":{"type":"exposure","stops":0.45},"mask":"subject"}},
+  {"type":"set_output","id":"subject"}
+]

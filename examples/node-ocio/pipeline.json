@@ -1,0 +1,9 @@
+{
+  "config": {"type": "file", "path": "config.ocio"},
+  "engine_version": "2.5.2",
+  "input": {"type": "managed"},
+  "working_space": "linear",
+  "display_name": "Photo sRGB",
+  "view": "Standard",
+  "context": {"GRADE": "warm"}
+}

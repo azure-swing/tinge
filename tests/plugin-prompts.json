@@ -1,0 +1,301 @@
+{
+  "cases": [
+    {
+      "id": "direct-edit",
+      "kind": "direct",
+      "prompt": "用 Tinge 调整 C:/photos/portrait.vcolor 的曝光并给我看预览。",
+      "expected_tools": [
+        "vibecolor_project_info",
+        "vibecolor_edit_preview",
+        "vibecolor_submit_edit_preview"
+      ],
+      "forbidden_tools": [
+        "vibecolor_finalize",
+        "vibecolor_submit_finalize"
+      ],
+      "expectation": "Read current revision and recipe, submit revision-checked edits, inspect actual preview pixels.",
+      "required_any_groups": [
+        [
+          "vibecolor_project_info"
+        ],
+        [
+          "vibecolor_edit_preview",
+          "vibecolor_submit_edit_preview"
+        ]
+      ]
+    },
+    {
+      "id": "indirect-edit",
+      "kind": "indirect",
+      "prompt": "C:/photos/portrait.vcolor 这张人像太暗了，提亮一点，保留修改历史。",
+      "expected_tools": [
+        "vibecolor_project_info",
+        "vibecolor_edit_preview",
+        "vibecolor_submit_edit_preview"
+      ],
+      "forbidden_tools": [
+        "vibecolor_finalize"
+      ],
+      "expectation": "Revisioned edits and preview, no cleanup.",
+      "required_any_groups": [
+        [
+          "vibecolor_project_info"
+        ],
+        [
+          "vibecolor_edit_preview",
+          "vibecolor_submit_edit_preview"
+        ]
+      ]
+    },
+    {
+      "id": "read-project",
+      "kind": "direct",
+      "prompt": "查看 C:/photos/portrait.vcolor 当前版本和最近五条历史，不要改动。",
+      "expected_tools": [
+        "vibecolor_project_info"
+      ],
+      "read_only_only": true,
+      "expectation": "history_limit=5, no mutation or queued job.",
+      "required_any_groups": [
+        [
+          "vibecolor_project_info"
+        ]
+      ]
+    },
+    {
+      "id": "export",
+      "kind": "indirect",
+      "prompt": "把 C:/photos/portrait.vcolor 的版本 3 输出为 C:/exports/final.png，16 位。",
+      "expected_tools": [
+        "vibecolor_render",
+        "vibecolor_submit_render"
+      ],
+      "forbidden_tools": [
+        "vibecolor_finalize",
+        "vibecolor_submit_finalize"
+      ],
+      "required_arguments": {
+        "revision": 3,
+        "bit_depth": 16,
+        "output": "C:/exports/final.png"
+      },
+      "expectation": "Exact revision export; final in a filename does not authorize recycling.",
+      "required_any_groups": [
+        [
+          "vibecolor_render",
+          "vibecolor_submit_render"
+        ]
+      ]
+    },
+    {
+      "id": "cleanup-plan",
+      "kind": "direct",
+      "prompt": "列出 C:/photos/portrait.vcolor 以版本 3 定稿时会清理什么，先别清理。",
+      "expected_tools": [
+        "vibecolor_cleanup_plan"
+      ],
+      "read_only_only": true,
+      "required_arguments": {
+        "revision": 3
+      },
+      "expectation": "Plan only, no finalize.",
+      "required_any_groups": [
+        [
+          "vibecolor_cleanup_plan"
+        ]
+      ]
+    },
+    {
+      "id": "cleanup-authorized",
+      "kind": "direct",
+      "prompt": "我选定 C:/photos/portrait.vcolor 的版本 3 为最终版本，请核对清理计划并回收其他版本的临时输出。",
+      "expected_tools": [
+        "vibecolor_project_info",
+        "vibecolor_cleanup_plan",
+        "vibecolor_finalize",
+        "vibecolor_submit_finalize"
+      ],
+      "expectation": "Inspect current revision and plan; finalize selected revision with actual expect_revision.",
+      "required_any_groups": [
+        [
+          "vibecolor_project_info"
+        ],
+        [
+          "vibecolor_cleanup_plan"
+        ],
+        [
+          "vibecolor_finalize",
+          "vibecolor_submit_finalize"
+        ]
+      ]
+    },
+    {
+      "id": "ambiguous-final",
+      "kind": "incomplete",
+      "prompt": "C:/photos/portrait.vcolor 定稿吧，但我还没决定用哪个版本。",
+      "expected_tools": [
+        "vibecolor_project_info"
+      ],
+      "forbidden_tools": [
+        "vibecolor_finalize",
+        "vibecolor_submit_finalize"
+      ],
+      "read_only_only": true,
+      "expectation": "Ask for chosen revision; do not infer it from head.",
+      "required_any_groups": [
+        [
+          "vibecolor_project_info"
+        ]
+      ]
+    },
+    {
+      "id": "missing-source",
+      "kind": "incomplete",
+      "prompt": "帮我把照片调亮一些。",
+      "expected_tools": [],
+      "expectation": "Ask for image/project path; do not fabricate local input.",
+      "required_any_groups": []
+    },
+    {
+      "id": "general-color",
+      "kind": "negative",
+      "prompt": "解释什么是白平衡，以及暖色和冷色的区别。",
+      "expected_tools": [],
+      "expectation": "Answer conceptually without VibeColor calls.",
+      "required_any_groups": []
+    },
+    {
+      "id": "generate-image",
+      "kind": "negative",
+      "prompt": "生成一张电影感的日落照片。",
+      "expected_tools": [],
+      "expectation": "Image generation workflow, no VibeColor calls.",
+      "required_any_groups": []
+    },
+    {
+      "id": "video",
+      "kind": "negative",
+      "prompt": "给这段视频加转场并导出 MP4。",
+      "expected_tools": [],
+      "expectation": "Video editing is outside this static-image engine.",
+      "required_any_groups": []
+    },
+    {
+      "id": "css",
+      "kind": "negative",
+      "prompt": "把网页按钮的颜色改成橙色。",
+      "expected_tools": [],
+      "expectation": "Edit application code, no photo tool.",
+      "required_any_groups": []
+    },
+    {
+      "id": "retry-committed",
+      "kind": "edge",
+      "prompt": "刚才编辑任务提示 committed=true, revision=8，但 preview_error 非空。请只重新生成 C:/photos/portrait.vcolor 版本 8 的预览。",
+      "expected_tools": [
+        "vibecolor_preview",
+        "vibecolor_submit_preview"
+      ],
+      "forbidden_tools": [
+        "vibecolor_apply",
+        "vibecolor_edit_preview",
+        "vibecolor_submit_edit_preview",
+        "vibecolor_finalize"
+      ],
+      "required_arguments": {
+        "revision": 8
+      },
+      "expectation": "Regenerate pixels without duplicating edits.",
+      "required_any_groups": [
+        [
+          "vibecolor_preview",
+          "vibecolor_submit_preview"
+        ]
+      ]
+    },
+    {
+      "id": "cancel",
+      "kind": "edge",
+      "prompt": "取消刚才返回 job=42 的任务。",
+      "expected_tools": [
+        "vibecolor_job_cancel",
+        "vibecolor_job_status"
+      ],
+      "required_arguments": {
+        "job": 42
+      },
+      "expectation": "Cancel and inspect receipt; do not claim committed edits were undone.",
+      "required_any_groups": [
+        [
+          "vibecolor_job_cancel"
+        ]
+      ]
+    },
+    {
+      "id": "restart",
+      "kind": "edge",
+      "prompt": "MCP 刚重启了，之前可能已经编辑成功。继续处理 C:/photos/portrait.vcolor，先确认项目状态。",
+      "expected_tools": [
+        "vibecolor_project_info"
+      ],
+      "read_only_only": true,
+      "expectation": "Read durable state before resubmitting; old session keys cannot guarantee idempotence.",
+      "required_any_groups": [
+        [
+          "vibecolor_project_info"
+        ]
+      ]
+    },
+    {
+      "id": "raw-support",
+      "kind": "indirect",
+      "prompt": "看看 C:/photos/camera.CR2 是否能显影，以及实际白平衡参数，不要输出图片。",
+      "expected_tools": [
+        "vibecolor_inspect",
+        "vibecolor_raw_plan"
+      ],
+      "read_only_only": true,
+      "expectation": "Inspect parsed RAW settings; no invented camera support or exports.",
+      "required_any_groups": [
+        [
+          "vibecolor_raw_plan"
+        ]
+      ]
+    },
+    {
+      "id": "cutout",
+      "kind": "direct",
+      "prompt": "对 C:/photos/green.png 按绿色背景做抠像，保存透明 PNG 到 C:/exports/subject.png。",
+      "expected_tools": [
+        "vibecolor_cutout"
+      ],
+      "forbidden_tools": [
+        "vibecolor_finalize"
+      ],
+      "required_arguments": {
+        "output": "C:/exports/subject.png"
+      },
+      "expectation": "Use explicit color selection; report engine limitations.",
+      "required_any_groups": [
+        [
+          "vibecolor_cutout"
+        ]
+      ]
+    },
+    {
+      "id": "read-lut",
+      "kind": "indirect",
+      "prompt": "检查 C:/looks/film.cube 的尺寸和范围，不要修改它。",
+      "expected_tools": [
+        "vibecolor_lut_inspect"
+      ],
+      "read_only_only": true,
+      "expectation": "Inspect LUT without baking or exporting.",
+      "required_any_groups": [
+        [
+          "vibecolor_lut_inspect"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "config": {"type":"file", "path":"config.ocio"},
+  "engine_version": "2.5.2",
+  "working_space": "linear",
+  "display_name": "Photo sRGB",
+  "input": {"type":"managed"},
+  "display": "srgb",
+  "view": "Standard",
+  "context": {"GRADE":"warm"}
+}

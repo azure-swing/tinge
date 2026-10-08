@@ -1,0 +1,8 @@
+{
+  "config": "studio-config-v4.0.0_aces-v2.0_ocio-v2.5",
+  "engine_version": "2.5.2",
+  "input": {"type":"managed"},
+  "display": "display_p3",
+  "view": "ACES 2.0 - SDR 100 nits (P3 D65)",
+  "preview_view": "ACES 2.0 - SDR 100 nits (Rec.709)"
+}

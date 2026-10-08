@@ -1,0 +1,259 @@
+{
+  "name": "VibeColor",
+  "status": "development: full Resolve/Lightroom parity is NOT achieved",
+  "implemented_controls_are_baselines": true,
+  "operator_count": 31,
+  "coverage_document": "docs/coverage.md",
+  "agent_protocol": {
+    "json": true,
+    "jsonl": true,
+    "mcp_stdio": true,
+    "schema": true,
+    "strict_parameters": true,
+    "revision_checked_transactions": true,
+    "named_mcp_tools": true,
+    "generic_mcp_executor": false,
+    "explicit_tool_annotations": true,
+    "targeted_schema": true,
+    "project_summary_pagination": true,
+    "edit_preview": true,
+    "session_jobs_query_cancel_idempotency": true,
+    "managed_viewers": true,
+    "finalize_registered_workfiles_to_recycle_bin": "Windows local fixed drives; source, history, final drafts and durable exports retained",
+    "managed_preview_paths": true,
+    "workflow_document": "docs/agent-workflow.md"
+  },
+  "processing": {
+    "backend": "Rust CPU / Rayon + statically linked OpenColorIO C++",
+    "precision": "float32",
+    "working_space": "scene-linear sRGB D65",
+    "clipping": "integer output and documented per-operator domain constraints",
+    "cache": "in-process, content-addressed, configurable 512MiB per engine default; idle release after 60s; not a process memory limit"
+  },
+  "implemented": [
+    "serial/branch node graph",
+    "layer blend modes",
+    "lift gamma gain offset",
+    "exposure",
+    "linear RGB white balance",
+    "contrast saturation vibrance",
+    "tone ranges",
+    "CDL SOP/saturation",
+    "log wheels",
+    "custom HDR EV zones",
+    "RGB/luma curves",
+    "six hue/saturation/luminance curve modes",
+    "HSL bands",
+    "point-based hue/saturation warper",
+    "RGB mixer",
+    "split tone",
+    "Iridas / Resolve cube LUT: 1D, 3D and combined 1D shaper + 3D; independent ranges; trilinear / tetrahedral interpolation",
+    "lut_inspect and pointwise opaque RGB recipe/project-revision baking to standalone 3D cube; explicit input/output encodings and sampled error QA; frozen dependencies before sampling",
+    "Reinhard / ACES approximation tone map",
+    "chroma compression",
+    "geometric/brush/range/imported bitmap masks",
+    "union/intersection/subtraction/inversion",
+    "Gaussian blur",
+    "unsharp mask",
+    "clarity",
+    "bilateral denoise",
+    "vignette",
+    "deterministic grain",
+    "glow",
+    "crop resize 90-degree rotate",
+    "radial lens distortion",
+    "clone region",
+    "histogram waveform RGB parade vectorscope",
+    "source asset freezing",
+    "atomic project transactions",
+    "history restore branches tags",
+    "batch export",
+    "comparison / PNG preview",
+    "RGB ICC input conversion and output ICC",
+    "RAW decode and revisioned v1 development: pre-demosaic camera WB / xy, full black-white repeat patterns, exposure, crop / orientation, decoder-supplied calibration illuminant selection; raw_plan metadata and sensor probes (rawler support range)",
+    "real OCIO 2.5.2, pinned builtin ACES 1.3 / 2.0 configs, camera Log input and sRGB / Display P3 / Rec.2100 PQ display views",
+    "revisioned OCIO input/display pipeline, consistent previews, scene-linear float export",
+    "custom OCIO config discovery, explicit context defaults/overrides and numeric CPU transforms",
+    "native binary OCIOZ project snapshots of config and supported LUT files under its working directory",
+    "immutable OCIO package validation before cached decoding; portable project history/context restore",
+    "declared linear OCIO anchor primaries and custom display/preview names",
+    "ocio_grade graph nodes: native ASC CDL v1.2 and RGB affine matrices in named OCIO process spaces; ordered/inverse/fallback Look strings",
+    "OCIO node dependency compilation before project commits and cache hits; processor IDs/context/files/looks in progress and validation reports",
+    "ASC cc/ccc/cdl parameter exchange: native OCIO reads, strict UTF-8 XML structure, case-sensitive ID / explicit index selection, f64-preserving export with native reread; immutable inline grades with source hash and standard descriptions; project-revision parameter export reports omitted interpretation/graph context",
+    "wide-gamut RGB ICC output and tagged linear EXR with colorInteropID/chromaticities",
+    "16-bit Rec.2020 PQ PNG cICP output, selected cICP input, explicit manual PQ luminance scale",
+    "EXR premultiplied alpha exchange, custom chromaticities conversion and metadata inspection",
+    "weight-free cutout: sampled color key, deterministic 5-component full-covariance GrabCut with rectangle/strokes, explicit trimap or mask, native closed-form alpha matting, grow/feather, local foreground decontamination, despill; transparent PNG/TIFF/EXR and raw scalar 16-bit PNG matte"
+  ],
+  "input_formats": [
+    "PNG",
+    "JPEG",
+    "TIFF",
+    "OpenEXR",
+    "Radiance HDR",
+    "WebP",
+    "BMP",
+    "Camera RAW via rawler"
+  ],
+  "output_formats": {
+    "PNG": [
+      8,
+      16
+    ],
+    "JPEG": [
+      8
+    ],
+    "TIFF": [
+      8,
+      16,
+      32
+    ],
+    "OpenEXR": [
+      32
+    ]
+  },
+  "color_transforms": {
+    "primaries": [
+      "sRGB",
+      "Display P3",
+      "Rec.2020",
+      "ACEScg (Bradford D60 to D65)"
+    ],
+    "transfers": [
+      "linear",
+      "sRGB",
+      "gamma22",
+      "gamma24",
+      "PQ normalized to 10000 nits",
+      "HLG scene OETF"
+    ],
+    "icc": "moxcms RGB profile to linear sRGB; explicit input_space overrides metadata",
+    "ocio_image_pipeline": "exact builtin config or hashed native OCIOZ project snapshot + engine version; explicit context; managed ICC/RAW or encoded RGB input; declared linear OCIO anchor encoding converted to/from canonical Frame; selected sRGB/P3/PQ display for integer output; explicit SDR preview for P3/PQ; scene values for float output",
+    "ocio_snapshot_limits": "native archivable configs only; all supported LUT extensions under the working directory; no outside-root relocation; no links/junctions; 100000 directory entries and 512 MiB LUT payload limit",
+    "ocio_grade": "requires color_pipeline; canonical linear Frame -> declared anchor -> chosen color_space -> native CDL/matrix -> anchor -> canonical; Looks own process spaces; mask/mix after return to canonical; float outputs include grades and omit display view",
+    "ocio_cdl": "finite nonnegative slope/saturation, positive power; inverse requires positive slope/saturation; style asc or no_clamp (default); inverse ASC cannot recover clipped values",
+    "output": "linear/sRGB/gamma22/gamma24 RGB ICC for supported primaries in PNG/JPEG/TIFF; linear EXR colorInteropID + chromaticities; Rec.2020 PQ only in 16-bit PNG with cICP",
+    "png_cicp_input": {
+      "primaries": [
+        1,
+        9,
+        12
+      ],
+      "transfers": [
+        8,
+        13,
+        16
+      ],
+      "matrix": 0,
+      "full_range": true,
+      "precedence": "explicit input_space > cICP > ICC"
+    },
+    "pq_luminance": "decoded PQ linear 1 = 10000 nits; manual scene export requires linear_unit_nits; OCIO HDR view owns its scene-to-display mapping",
+    "exr_alpha": "premultiplied on disk, straight in Frame; zero-alpha additive RGB input rejected; hidden RGB at zero alpha discarded on export with warning"
+  },
+  "not_implemented": [
+    "LUT formats beyond cube, 1D/shaper baking, automatic LUT inversion and spatial/alpha-dependent LUT baking",
+    "full RAW development parameters / DCP / dual-illuminant calibration / highlight recovery",
+    "outside-root OCIO dependency relocation and full config packaging, arbitrary domains for all legacy operators and Resolve RCM equivalence",
+    "CMYK/gray ICC, full CICP import, soft proofing and professional display",
+    "HLG display OOTF, HDR static/mastering metadata and complete HDR format/profile support",
+    "GPU",
+    "AI Magic Mask / depth / relighting / face tools",
+    "Resolve mesh color warper equivalence and ColorSlice",
+    "complete Resolve FX / OpenFX host / DCTL",
+    "heal/object removal/super resolution",
+    "camera/lens profiles and chromatic aberration",
+    "catalog/EXIF/XMP preservation",
+    "durable daemon jobs and progress/cancel recovery across process restart",
+    "all remaining static-image Resolve Studio features",
+    "professional calibrated/HDR viewer, GPU tiled previews and packaged Codex plugin bridge"
+  ],
+  "out_of_scope_for_image_phase": [
+    "timeline edit",
+    "audio Fairlight",
+    "motion tracking / temporal denoise",
+    "stereoscopic video",
+    "video delivery"
+  ],
+  "raw_development": {
+    "algorithm_version": 1,
+    "white_balance": [
+      "as_shot",
+      "unity",
+      "camera_gains",
+      "chromaticity",
+      "temperature"
+    ],
+    "exposure_ev": [
+      -20,
+      20
+    ],
+    "levels": "native sensor units; full repeat patterns up to 16x16 and interleaved cpp",
+    "crop": [
+      "sensor",
+      "active",
+      "default"
+    ],
+    "orientation": true,
+    "calibration_illuminant_selection": true,
+    "raw_plan_sensor_probe_limit": 256,
+    "wb_stage": "before demosaic; legacy absent settings retain after-demosaic WB",
+    "missing_as_shot": "explicit selected-matrix D65 xy fallback in raw_plan",
+    "scene_output": "linear sRGB D65; no upper sensor clipping / highlight reconstruction",
+    "camera_corpus": "four selected CC0 camera files; limited acceptance, no Lightroom pixel parity",
+    "raw_corpus_manifest": "artifacts/raw-corpus-manifest.json",
+    "documentation": "docs/raw-workflow.md",
+    "temperature": {
+      "kelvin": [
+        1667,
+        25000
+      ],
+      "tint_duv": [
+        -0.05,
+        0.05
+      ],
+      "method": "Kang 2002 fit; analytic branch tangent; signed normal offset in CIE 1960 uv",
+      "positive_duv": "greener source white; camera WB compensates toward magenta",
+      "6504K_duv0_is_D65": false,
+      "lightroom_tint_numeric_equivalence": false
+    }
+  },
+  "cutout": {
+    "weights_required": false,
+    "runtime": "native Rust CPU; no Python/OpenCV runtime",
+    "selection": [
+      "color",
+      "grab_cut",
+      "mask",
+      "trimap"
+    ],
+    "refinement": [
+      "none",
+      "closed_form"
+    ],
+    "workflow_document": "docs/cutout-workflow.md",
+    "semantic_subject_selection": false,
+    "grabcut_max_edge_default": 512,
+    "matting_max_edge_default": 1024,
+    "matting_unknown_pixel_limit": 500000
+  },
+  "viewer": {
+    "backend": "native Rust loopback HTTP; embedded HTML/CSS/JavaScript; no Node runtime",
+    "startup": "view project --port 0; opens default browser, --no-open prints local URL",
+    "preview": "ICC-tagged 8-bit SDR sRGB using the same native CLI display pipeline",
+    "agent_changes_auto_refresh": true,
+    "preview_disk_files": false,
+    "controls": [
+      "fit/pan/zoom/device-pixel 100%",
+      "original/wipe/side-by-side/arbitrary revision compare",
+      "freehand lasso/ellipse/add/subtract",
+      "name revision/restore with conflict checks"
+    ],
+    "selections": "separate atomic .selections.json; immutable revision/source/recipe/output-node/dimensions; CLI selections and MCP selection_save",
+    "max_edge": 16384,
+    "png_limit_bytes": 67108864,
+    "calibrated_display_guarantee": false,
+    "hdr_preview": false,
+    "documentation": "docs/viewer-workflow.md"
+  }
+}

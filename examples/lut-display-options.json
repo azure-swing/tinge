@@ -1,0 +1,7 @@
+{
+  "size":33,
+  "input_encoding":{"type":"standard","space":{"primaries":"srgb","transfer":"srgb"}},
+  "output_encoding":{"type":"display"},
+  "validation_samples":4096,
+  "validation_interpolation":"tetrahedral"
+}

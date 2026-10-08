@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {"id":"balance","inputs":["source"],"op":{"type":"white_balance","gains":[1.035,1.0,0.96]}},
+    {"id":"primary","inputs":["balance"],"op":{"type":"primary","exposure":0.2,"contrast":1.1,"pivot":0.18,"saturation":0.92,"vibrance":0.12}},
+    {"id":"curve","inputs":["primary"],"op":{"type":"curves","channel":"rgb","points":[[0.0,0.015],[0.2,0.18],[0.5,0.52],[0.8,0.83],[1.0,0.99]]}},
+    {"id":"look","inputs":["curve"],"op":{"type":"split_tone","shadows":[-0.008,0.008,0.018],"highlights":[0.018,0.008,-0.012],"strength":0.6}},
+    {"id":"vignette","inputs":["look"],"op":{"type":"vignette","amount":-0.2,"center":[0.5,0.5],"radius":1.0,"feather":0.65}},
+    {"id":"grain","inputs":["vignette"],"op":{"type":"grain","amount":0.004,"seed":42,"monochrome":true}}
+  ],
+  "output": "grain",
+  "masks": {}
+}

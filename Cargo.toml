@@ -1,0 +1,36 @@
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/color", "crates/io", "crates/project", "crates/engine", "crates/cli", "crates/ocio"]
+exclude = ["vendor/ocio-rs", "vendor/ocio-sys"]
+
+[patch.crates-io]
+ocio-rs = { path = "vendor/ocio-rs" }
+ocio-sys = { path = "vendor/ocio-sys" }
+
+[workspace.package]
+version = "0.2.1"
+edition = "2024"
+license = "MIT"
+rust-version = "1.95"
+
+[workspace.dependencies]
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+schemars = "1.0"
+rayon = "1.11"
+blake3 = "1.8"
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "tiff", "exr", "hdr", "webp", "bmp"] }
+clap = { version = "4.6", features = ["derive"] }
+tempfile = "3.23"
+fs2 = "0.4"
+vibecolor-core = { path = "crates/core" }
+vibecolor-color = { path = "crates/color" }
+vibecolor-io = { path = "crates/io" }
+vibecolor-project = { path = "crates/project" }
+vibecolor-engine = { path = "crates/engine" }
+vibecolor-ocio = { path = "crates/ocio" }
+
+[profile.release]
+lto = "thin"
+strip = true

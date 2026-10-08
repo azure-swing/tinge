@@ -1,0 +1,7 @@
+{
+  "nodes": [
+    {"id":"balance","op":{"type":"white_balance","gains":[1.04,1,0.96]}},
+    {"id":"exposure","inputs":["balance"],"op":{"type":"exposure","stops":0.2}}
+  ],
+  "output":"exposure"
+}

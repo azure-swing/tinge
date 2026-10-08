@@ -1,0 +1,7 @@
+{
+  "algorithm_version": 1,
+  "white_balance": {"type": "temperature", "kelvin": 6504, "tint_duv": 0.003},
+  "exposure_ev": 0,
+  "crop": "default",
+  "apply_orientation": true
+}

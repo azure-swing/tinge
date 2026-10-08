@@ -1,0 +1,222 @@
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
+use crate::{NegativeStyle, OcioError, Result, TransformDirection};
+use ocio_sys;
+
+/// Exponent transform with an additional linear section around zero.
+pub struct ExponentWithLinearTransform {
+    pub(crate) handle: NonNull<c_void>,
+}
+
+impl ExponentWithLinearTransform {
+    /// Create a new exponent-with-linear transform.
+    pub fn create() -> Result<Self> {
+        crate::clear_last_error();
+        let handle = unsafe { ocio_sys::ocio_exponent_with_linear_transform_create() };
+        crate::handle_result(handle).map(|handle| Self { handle })
+    }
+
+    /// Return the per-channel gamma values.
+    pub fn gamma(&self) -> Result<[f64; 4]> {
+        let mut vec4 = [1.0f64; 4];
+        crate::clear_last_error();
+        unsafe {
+            ocio_sys::ocio_exponent_with_linear_transform_get_gamma(
+                self.handle.as_ptr(),
+                vec4.as_mut_ptr(),
+            );
+        }
+        crate::ocio_call_status()?;
+        Ok(vec4)
+    }
+
+    /// Set the per-channel gamma values.
+    pub fn set_gamma(&self, vec4: &[f64; 4]) -> Result<()> {
+        crate::clear_last_error();
+        unsafe {
+            ocio_sys::ocio_exponent_with_linear_transform_set_gamma(
+                self.handle.as_ptr(),
+                vec4.as_ptr(),
+            );
+        }
+        crate::ocio_call_status()
+    }
+
+    /// Return the per-channel offset values.
+    pub fn offset(&self) -> Result<[f64; 4]> {
+        let mut vec4 = [0.0f64; 4];
+        crate::clear_last_error();
+        unsafe {
+            ocio_sys::ocio_exponent_with_linear_transform_get_offset(
+                self.handle.as_ptr(),
+                vec4.as_mut_ptr(),
+            );
+        }
+        crate::ocio_call_status()?;
+        Ok(vec4)
+    }
+
+    /// Set the per-channel offset values.
+    pub fn set_offset(&self, vec4: &[f64; 4]) -> Result<()> {
+        crate::clear_last_error();
+        unsafe {
+            ocio_sys::ocio_exponent_with_linear_transform_set_offset(
+                self.handle.as_ptr(),
+                vec4.as_ptr(),
+            );
+        }
+        crate::ocio_call_status()
+    }
+
+    /// Return the negative value handling style.
+    pub fn negative_style(&self) -> NegativeStyle {
+        let s = unsafe {
+            ocio_sys::ocio_exponent_with_linear_transform_get_negative_style(self.handle.as_ptr())
+        };
+        match s {
+            1 => NegativeStyle::Mirror,
+            2 => NegativeStyle::PassThru,
+            3 => NegativeStyle::Linear,
+            _ => NegativeStyle::Clamp,
+        }
+    }
+
+    /// Set the negative value handling style.
+    pub fn set_negative_style(&self, style: NegativeStyle) -> Result<()> {
+        crate::clear_last_error();
+        unsafe {
+            ocio_sys::ocio_exponent_with_linear_transform_set_negative_style(
+                self.handle.as_ptr(),
+                style as i32,
+            );
+        }
+        crate::ocio_call_status()
+    }
+
+    /// Return the transform direction.
+    pub fn direction(&self) -> TransformDirection {
+        let dir = unsafe {
+            ocio_sys::ocio_exponent_with_linear_transform_get_direction(self.handle.as_ptr())
+        };
+        match dir {
+            1 => TransformDirection::Inverse,
+            _ => TransformDirection::Forward,
+        }
+    }
+
+    /// Set the transform direction.
+    pub fn set_direction(&self, direction: TransformDirection) {
+        self.try_set_direction(direction)
+            .expect("failed to set exponent-with-linear transform direction");
+    }
+
+    /// Set the transform direction and surface any OCIO validation error.
+    pub fn try_set_direction(&self, direction: TransformDirection) -> crate::Result<()> {
+        crate::clear_last_error();
+        unsafe {
+            ocio_sys::ocio_exponent_with_linear_transform_set_direction(
+                self.handle.as_ptr(),
+                direction as i32,
+            );
+        }
+        crate::ocio_call_status()
+    }
+
+    /// Create an independent copy of this transform.
+    pub fn create_editable_copy(&self) -> Result<Self> {
+        crate::clear_last_error();
+        let handle = unsafe { ocio_sys::ocio_transform_create_editable_copy(self.handle.as_ptr()) };
+        crate::handle_result(handle).map(|handle| Self { handle })
+    }
+
+    /// Return format metadata attached to the transform, when available.
+    pub fn format_metadata(&self) -> Option<crate::FormatMetadata> {
+        let handle = unsafe { ocio_sys::ocio_transform_get_format_metadata(self.handle.as_ptr()) };
+        NonNull::new(handle).map(|h| crate::FormatMetadata { handle: h })
+    }
+
+    #[deprecated(since = "0.2.0", note = "compat alias; prefer format_metadata()")]
+    pub fn format_metadata_v1(&self) -> Option<crate::FormatMetadata> {
+        self.format_metadata()
+    }
+
+    #[deprecated(since = "0.2.0", note = "compat alias; prefer format_metadata()")]
+    pub fn format_metadata_v2(&self) -> Option<crate::FormatMetadata> {
+        self.format_metadata()
+    }
+
+    /// Return whether this transform is equivalent to `other`.
+    pub fn equals(&self, other: &Self) -> bool {
+        unsafe {
+            ocio_sys::ocio_exponent_with_linear_transform_equals(
+                self.handle.as_ptr(),
+                other.handle.as_ptr(),
+            )
+        }
+    }
+}
+
+impl Drop for ExponentWithLinearTransform {
+    fn drop(&mut self) {
+        unsafe { ocio_sys::ocio_exponent_with_linear_transform_destroy(self.handle.as_ptr()) };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_exponent_with_linear() {
+        let t = ExponentWithLinearTransform::create();
+        assert!(t.is_ok());
+    }
+
+    #[test]
+    fn gamma_no_crash() {
+        let t = ExponentWithLinearTransform::create().unwrap();
+        let _ = t.gamma();
+        let _ = t.set_gamma(&[1.0, 1.0, 1.0, 1.0]);
+    }
+
+    #[test]
+    fn offset_no_crash() {
+        let t = ExponentWithLinearTransform::create().unwrap();
+        let _ = t.offset();
+        let _ = t.set_offset(&[0.0, 0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn negative_style_no_crash() {
+        let t = ExponentWithLinearTransform::create().unwrap();
+        let _ = t.negative_style();
+        let _ = t.set_negative_style(NegativeStyle::Mirror);
+    }
+
+    #[test]
+    fn direction_no_crash() {
+        let t = ExponentWithLinearTransform::create().unwrap();
+        let _ = t.direction();
+        t.set_direction(TransformDirection::Inverse);
+    }
+
+    #[test]
+    fn create_editable_copy_no_crash() {
+        let t = ExponentWithLinearTransform::create().unwrap();
+        let _ = t.create_editable_copy();
+    }
+
+    #[test]
+    fn format_metadata_no_crash() {
+        let t = ExponentWithLinearTransform::create().unwrap();
+        let _ = t.format_metadata();
+    }
+
+    #[test]
+    fn equals_no_crash() {
+        let a = ExponentWithLinearTransform::create().unwrap();
+        let b = ExponentWithLinearTransform::create().unwrap();
+        let _ = a.equals(&b);
+    }
+}

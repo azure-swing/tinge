@@ -1,0 +1,9 @@
+{
+  "selection": {
+    "type": "color",
+    "color": [0.0, 1.0, 0.0],
+    "tolerance": 0.08,
+    "softness": 0.12
+  },
+  "despill": { "color": [0.0, 1.0, 0.0], "amount": 0.7 }
+}

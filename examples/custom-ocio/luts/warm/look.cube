@@ -1,0 +1,4 @@
+TITLE "Linear warm gains"
+LUT_1D_SIZE 2
+0 0 0
+1 0.95 0.85

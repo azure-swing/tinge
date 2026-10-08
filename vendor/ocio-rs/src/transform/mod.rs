@@ -1,0 +1,298 @@
+//! OCIO transform wrappers.
+//!
+//! Each struct in this module wraps a single OpenColorIO transform type
+//! (e.g. [`ColorSpaceTransform`], [`GradingRGBCurveTransform`]) and exposes
+//! safe Rust accessors for its properties.
+//!
+//! All transform types follow a consistent pattern:
+//!
+//! - **Constructor**: [`create`](std::result::Result) returns `Result<Self>`.
+//! - **Getters**: Return the current property value (often infallible).
+//! - **Setters**: Legacy void setters panic on error; checked `try_*` variants
+//!   return `Result<()>` and surface OCIO validation errors.
+//! - **Direction**: Every transform that supports forward/inverse evaluation
+//!   provides `direction()` / `try_set_direction()`.
+//! - **Editable copy**: [`create_editable_copy`](std::result::Result) returns
+//!   an independent deep copy that can be mutated without affecting the original.
+
+mod allocation;
+mod builtin;
+mod cdl;
+mod color_space;
+mod display_view;
+mod exponent;
+mod exponent_with_linear;
+mod exposure_contrast;
+mod file;
+mod fixed_function;
+mod grading_hue_curve;
+mod grading_primary;
+mod grading_rgb_curve;
+mod grading_tone;
+mod group;
+mod log;
+mod log_affine;
+mod log_camera;
+mod look_transform;
+mod lut1d;
+mod lut3d;
+mod matrix;
+mod range;
+
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
+use ocio_sys;
+
+pub use allocation::AllocationTransform;
+pub use builtin::BuiltinTransform;
+pub use cdl::CDLTransform;
+pub use color_space::ColorSpaceTransform;
+pub use display_view::DisplayViewTransform;
+pub use exponent::ExponentTransform;
+pub use exponent_with_linear::ExponentWithLinearTransform;
+pub use exposure_contrast::ExposureContrastTransform;
+pub use file::FileTransform;
+pub use fixed_function::FixedFunctionTransform;
+pub use grading_hue_curve::GradingHueCurveTransform;
+pub use grading_primary::GradingPrimaryTransform;
+pub use grading_rgb_curve::GradingRGBCurveTransform;
+pub use grading_tone::GradingToneTransform;
+pub use group::GroupTransform;
+pub use log::LogTransform;
+pub use log_affine::LogAffineTransform;
+pub use log_camera::LogCameraTransform;
+pub use look_transform::LookTransform;
+pub use lut1d::Lut1DTransform;
+pub use lut3d::Lut3DTransform;
+pub use matrix::MatrixTransform;
+pub use range::RangeTransform;
+
+pub trait TransformHandle {
+    fn as_ptr(&self) -> *mut c_void;
+}
+
+impl TransformHandle for FileTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for CDLTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for ExponentTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for ExponentWithLinearTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for MatrixTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for LogTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for RangeTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for GroupTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for BuiltinTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for FixedFunctionTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for Lut1DTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for Lut3DTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for ExposureContrastTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for ColorSpaceTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for LookTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for DisplayViewTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for AllocationTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for LogAffineTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for LogCameraTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for GradingRGBCurveTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for GradingHueCurveTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for GradingPrimaryTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+impl TransformHandle for GradingToneTransform {
+    fn as_ptr(&self) -> *mut c_void {
+        self.handle.as_ptr()
+    }
+}
+
+pub enum Transform {
+    File(FileTransform),
+    CDL(CDLTransform),
+    Exponent(ExponentTransform),
+    ExponentWithLinear(ExponentWithLinearTransform),
+    Matrix(MatrixTransform),
+    Log(LogTransform),
+    Range(RangeTransform),
+    Group(GroupTransform),
+    Builtin(BuiltinTransform),
+    FixedFunction(FixedFunctionTransform),
+    Lut1D(Lut1DTransform),
+    Lut3D(Lut3DTransform),
+    ExposureContrast(ExposureContrastTransform),
+    ColorSpace(ColorSpaceTransform),
+    Look(LookTransform),
+    DisplayView(DisplayViewTransform),
+    Allocation(AllocationTransform),
+    LogAffine(LogAffineTransform),
+    LogCamera(LogCameraTransform),
+    GradingPrimary(GradingPrimaryTransform),
+    GradingRGBCurve(GradingRGBCurveTransform),
+    GradingHueCurve(GradingHueCurveTransform),
+    GradingTone(GradingToneTransform),
+}
+
+impl TransformHandle for Transform {
+    fn as_ptr(&self) -> *mut c_void {
+        match self {
+            Transform::File(t) => t.as_ptr(),
+            Transform::CDL(t) => t.as_ptr(),
+            Transform::Exponent(t) => t.as_ptr(),
+            Transform::ExponentWithLinear(t) => t.as_ptr(),
+            Transform::Matrix(t) => t.as_ptr(),
+            Transform::Log(t) => t.as_ptr(),
+            Transform::Range(t) => t.as_ptr(),
+            Transform::Group(t) => t.as_ptr(),
+            Transform::Builtin(t) => t.as_ptr(),
+            Transform::FixedFunction(t) => t.as_ptr(),
+            Transform::Lut1D(t) => t.as_ptr(),
+            Transform::Lut3D(t) => t.as_ptr(),
+            Transform::ExposureContrast(t) => t.as_ptr(),
+            Transform::ColorSpace(t) => t.as_ptr(),
+            Transform::Look(t) => t.as_ptr(),
+            Transform::DisplayView(t) => t.as_ptr(),
+            Transform::Allocation(t) => t.as_ptr(),
+            Transform::LogAffine(t) => t.as_ptr(),
+            Transform::LogCamera(t) => t.as_ptr(),
+            Transform::GradingPrimary(t) => t.as_ptr(),
+            Transform::GradingRGBCurve(t) => t.as_ptr(),
+            Transform::GradingHueCurve(t) => t.as_ptr(),
+            Transform::GradingTone(t) => t.as_ptr(),
+        }
+    }
+}
+
+/// Convert an owned bridge transform handle into its typed Rust wrapper.
+///
+/// Callers transfer ownership of `handle` to this function. Unknown future OCIO
+/// type tags are rejected after releasing the handle rather than leaking it.
+pub(crate) fn transform_from_raw_handle(handle: *mut c_void) -> Option<Transform> {
+    if handle.is_null() {
+        return None;
+    }
+    let type_tag = unsafe { ocio_sys::ocio_transform_get_transform_type(handle) };
+    let nn = NonNull::new(handle).unwrap();
+    match type_tag {
+        1 => Some(Transform::Builtin(BuiltinTransform { handle: nn })),
+        2 => Some(Transform::CDL(CDLTransform { handle: nn })),
+        5 => Some(Transform::Exponent(ExponentTransform { handle: nn })),
+        6 => Some(Transform::ExponentWithLinear(ExponentWithLinearTransform {
+            handle: nn,
+        })),
+        8 => Some(Transform::File(FileTransform { handle: nn })),
+        9 => Some(Transform::FixedFunction(FixedFunctionTransform {
+            handle: nn,
+        })),
+        14 => Some(Transform::Group(GroupTransform { handle: nn })),
+        17 => Some(Transform::Log(LogTransform { handle: nn })),
+        19 => Some(Transform::Lut1D(Lut1DTransform { handle: nn })),
+        20 => Some(Transform::Lut3D(Lut3DTransform { handle: nn })),
+        21 => Some(Transform::Matrix(MatrixTransform { handle: nn })),
+        22 => Some(Transform::Range(RangeTransform { handle: nn })),
+        7 => Some(Transform::ExposureContrast(ExposureContrastTransform {
+            handle: nn,
+        })),
+        3 => Some(Transform::ColorSpace(ColorSpaceTransform { handle: nn })),
+        18 => Some(Transform::Look(LookTransform { handle: nn })),
+        4 => Some(Transform::DisplayView(DisplayViewTransform { handle: nn })),
+        0 => Some(Transform::Allocation(AllocationTransform { handle: nn })),
+        15 => Some(Transform::LogAffine(LogAffineTransform { handle: nn })),
+        16 => Some(Transform::LogCamera(LogCameraTransform { handle: nn })),
+        11 => Some(Transform::GradingPrimary(GradingPrimaryTransform {
+            handle: nn,
+        })),
+        10 => Some(Transform::GradingHueCurve(GradingHueCurveTransform {
+            handle: nn,
+        })),
+        12 => Some(Transform::GradingRGBCurve(GradingRGBCurveTransform {
+            handle: nn,
+        })),
+        13 => Some(Transform::GradingTone(GradingToneTransform { handle: nn })),
+        _ => {
+            unsafe { ocio_sys::ocio_transform_destroy(handle) };
+            None
+        }
+    }
+}

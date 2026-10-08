@@ -1,0 +1,5 @@
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "tinge"
+      description: "Local photo-processing tools supplied by the Tinge plugin"

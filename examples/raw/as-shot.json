@@ -1,0 +1,8 @@
+{
+  "algorithm_version": 1,
+  "white_balance": {"type": "as_shot"},
+  "exposure_ev": 0,
+  "below_black": "clip",
+  "crop": "default",
+  "apply_orientation": true
+}

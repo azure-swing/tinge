@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VibeColor · 看图</title><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body>
+<header><a class="brand" href="./" aria-label="VibeColor 首页"><span class="mark"><i></i><i></i><i></i></span>VibeColor<span class="edition">PHOTO</span></a><div class="project"><strong id="projectName">正在打开图片</strong><span id="branch">由 agent 调色</span></div><div class="headerActions"><button id="versionsButton" aria-expanded="false">版本</button><button id="saveButton">保存版本</button><button id="finalizeButton" class="primary">定稿并清理</button></div></header>
+<nav class="toolbar" aria-label="图片查看工具">
+<div class="segmented" id="modes"><button data-mode="graded" class="active" aria-pressed="true">效果</button><button data-mode="original" aria-pressed="false">原图</button><button data-mode="wipe" aria-pressed="false">划分对比</button><button data-mode="side" aria-pressed="false">并排</button></div>
+<label class="selectLabel">对比<select id="reference" aria-label="对比图片"><option value="original">原图</option></select></label>
+<div class="spacer"></div><button id="fitButton" class="active">适应</button><button id="pixelButton" title="加载原尺寸预览，一个图片像素对应一个屏幕像素">100%</button><button id="refreshButton" title="重新读取项目">↻ <span class="wide">刷新</span></button>
+</nav>
+<main>
+<section id="workspace" aria-label="图片预览">
+<div id="stage" data-mode="graded" data-tool="hand" hidden>
+<div class="pane referencePane"><div class="photo" id="referencePhoto"><img id="referenceImage" alt="对比图片" draggable="false"></div><span class="imageLabel" id="referenceLabel">原图</span></div>
+<div class="pane gradedPane"><div class="photo" id="gradedPhoto"><img id="gradedImage" alt="当前调色效果" draggable="false"><svg id="overlay" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true"></svg></div><span class="imageLabel" id="gradedLabel">当前效果</span></div>
+<div id="divider" hidden><span>↔</span></div>
+</div>
+<div class="empty" id="empty"><span class="emptyMark">◒</span><strong>正在准备图片</strong><p>调色由 agent 处理，效果会在这里更新。</p></div>
+<div class="drawingBar" aria-label="圈划工具"><div class="segmented" id="tools"><button data-tool="hand" class="active" title="拖动画面；移动时隐藏圈选，以便查看颜色" aria-pressed="true">移动</button><button data-tool="lasso" title="按住拖动，圈出区域" aria-pressed="false">圈划</button><button data-tool="ellipse" aria-pressed="false">椭圆</button></div><div class="segmented" id="selectionModes"><button data-selection="add" class="active" aria-label="增加圈选" title="增加区域" aria-pressed="true">＋</button><button data-selection="subtract" aria-label="减去圈选" title="减去区域" aria-pressed="false">－</button></div><button id="clearButton" aria-label="清除草稿" title="清除尚未提交的圈划">清除草稿</button><button id="selectionButton" disabled>保存圈选</button></div>
+<div id="toast" role="status" hidden></div>
+</section>
+<aside id="versions" hidden><div class="asideHeading"><h2>版本记录</h2><button id="closeVersions" aria-label="关闭版本记录">×</button></div><label class="versionSelect">查看<select id="revision" aria-label="查看版本"><option value="latest">跟随最新版本</option></select></label><div id="history"></div><button id="restoreButton" disabled>恢复为当前版本</button><p class="hint">每次调色都保留历史。恢复也会创建新版本。</p><div class="selectionInfo"><h3>交给 agent 的圈选</h3><p id="selectionInfo">圈出想要调整的区域，再保存圈选。</p><label>补充说明<textarea id="note" maxlength="1000" placeholder="例如：只把天空调得更冷一些"></textarea></label></div></aside>
+</main>
+<footer><div><span id="statusDot" class="dot"></span><span id="status" role="status">连接本地引擎</span></div><span id="dimensions"></span><span id="color" title="预览为带 ICC 标签的 sRGB SDR；浏览器色域能力不代表显示器已校准。">sRGB SDR</span></footer>
+<dialog id="saveDialog"><form id="saveForm"><h2>保存这个版本</h2><p>给这一刻的调色起个名字，随时回来对比。</p><label>版本名称<input id="versionName" maxlength="80" placeholder="例如：傍晚的暖光" required autocomplete="off"></label><div class="dialogActions"><button type="button" id="cancelSave">取消</button><button type="submit" class="primary">保存</button></div><p id="saveError" role="alert"></p></form></dialog>
+<dialog id="finalizeDialog"><form id="finalizeForm"><h2>选定最终版本</h2><p id="finalizeSummary"></p><p>源图、全部配方历史和最终导出会保留。临时预览、对比图和其他版本的临时导出将移到回收站，历史版本仍可重新生成。</p><div class="dialogActions"><button type="button" id="cancelFinalize">取消</button><button type="submit" class="primary">定稿并移到回收站</button></div><p id="finalizeError" role="alert"></p></form></dialog>
+</body></html>

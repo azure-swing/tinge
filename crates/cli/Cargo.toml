@@ -1,0 +1,33 @@
+[package]
+name = "vibecolor-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "vibecolor"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+schemars.workspace = true
+clap.workspace = true
+base64 = "0.22"
+blake3.workspace = true
+httparse = "1.10.1"
+getrandom = "0.4.3"
+fs2.workspace = true
+tempfile.workspace = true
+vibecolor-core.workspace = true
+vibecolor-color.workspace = true
+vibecolor-io.workspace = true
+vibecolor-project.workspace = true
+vibecolor-engine.workspace = true
+vibecolor-ocio.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = ["Win32_UI_Shell", "Win32_System_Com", "Win32_Storage_FileSystem"] }
+

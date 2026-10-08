@@ -1,0 +1,8 @@
+{
+  "nodes": [
+    {"id": "look", "op": {"type": "ocio_grade", "grade": {"type": "look", "looks": "+Warm,+SoftContrast"}}},
+    {"id": "cdl", "inputs": ["look"], "mix": 0.65,
+      "op": {"type": "ocio_grade", "grade": {"type": "cdl", "color_space": "encoded", "slope": [1.02, 1, 0.98], "offset": [0.01, 0, 0], "power": [1, 1, 1], "saturation": 0.95, "style": "no_clamp"}}}
+  ],
+  "output": "cdl"
+}

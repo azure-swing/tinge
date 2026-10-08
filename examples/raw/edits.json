@@ -1,0 +1,13 @@
+[
+  {
+    "type": "set_raw_develop",
+    "options": {
+      "algorithm_version": 1,
+      "white_balance": {"type": "chromaticity", "xy": [0.3127, 0.3290]},
+      "exposure_ev": -0.25,
+      "below_black": "preserve",
+      "crop": "default",
+      "apply_orientation": true
+    }
+  }
+]

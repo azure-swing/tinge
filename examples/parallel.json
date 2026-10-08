@@ -1,0 +1,9 @@
+{
+  "schema_version":1,
+  "nodes":[
+    {"id":"warm","inputs":["source"],"op":{"type":"white_balance","gains":[1.1,1.0,0.9]}},
+    {"id":"cool","inputs":["source"],"op":{"type":"white_balance","gains":[0.9,1.0,1.1]}},
+    {"id":"blend","inputs":["warm","cool"],"op":{"type":"blend","mode":"normal"},"mix":0.5}
+  ],
+  "output":"blend"
+}

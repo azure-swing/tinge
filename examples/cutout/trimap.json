@@ -1,0 +1,5 @@
+{
+  "selection": { "type": "trimap", "path": "trimap.png" },
+  "refinement": { "max_edge": 1024, "iterations": 240 },
+  "decontaminate": 0.8
+}
