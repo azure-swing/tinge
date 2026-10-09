@@ -6,6 +6,9 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Tinge",
+    "composerIcon": "./assets/tinge-small.svg",
+    "logo": "./assets/tinge.svg",
+    "logoDark": "./assets/tinge.svg",
     "shortDescription": "Local photo grading with previews and revision history",
     "defaultPrompt": [
       "Adjust the exposure of this local photo and show a preview.",

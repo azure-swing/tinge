@@ -80,6 +80,15 @@ MCP 提供 42 个独立命名工具：`tinge_adjust`、`tinge_project_info`、`t
 
 Tinge 的本地 Windows 插件模板在 `plugin/`，包含 manifest、STDIO 连接和图片工作流 Skill。运行 `pwsh -File scripts/package-plugin.ps1` 构建包含原生二进制、Skill 参考资料、许可证与本地 marketplace 的独立包；包固定输出到 `target/plugin-package/tinge`，使用正式 `target/release/tinge.exe`；构建前须结束占用程序的旧进程。脚本输出包根目录。没有提交或发布动作。设计依据、迁移和验收边界见 [插件规范改造](docs/plugin-design.md)。
 
+在项目目录运行以下命令，将生成的包安装为 Codex 插件：
+
+```powershell
+codex plugin marketplace add ./target/plugin-package
+codex plugin add tinge@tinge-local
+```
+
+安装后在 Codex 插件列表中启用 **Tinge**，原生 MCP 服务随插件启动，无需另行添加连接。更新包后重新运行 `codex plugin add tinge@tinge-local`；新对话加载更新后的工具。图标源文件在 `plugin/assets/`，插件列表使用彩色图标，输入框使用适合小尺寸的纯色图标。
+
 “定稿并清理”在选定最终版本后，将已登记且未修改的临时预览和其他版本临时导出移入系统回收站，保留源图/资产/全部历史/正式导出及最终修订的临时导出。实际回收当前仅支持 Windows 本地固定磁盘，其他平台或回收失败时保留文件，不回退到永久删除。查看器不写临时 PNG，Agent 预览可使用稳定缓存路径，无损 PNG/项目 JSON 进一步减少体积。详见 [临时文件工作流](docs/storage-workflow.md)。
 
 无模型抠像支持颜色取样、GrabCut 框选/前景背景标记、trimap、Closed-Form alpha 精修和去溢色，可导出透明图片与独立 16 位灰度蒙版：

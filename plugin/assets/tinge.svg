@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <title>Tinge</title>
+  <defs>
+    <linearGradient id="tile" x1="64" y1="32" x2="448" y2="496" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#25263A"/>
+      <stop offset="1" stop-color="#11121E"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="104" y1="111" x2="408" y2="320" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFC67D"/>
+      <stop offset=".34" stop-color="#FF8F9F"/>
+      <stop offset=".67" stop-color="#AC91FF"/>
+      <stop offset="1" stop-color="#72E5DB"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#tile)"/>
+  <path transform="translate(0 12)" d="M104 155C104 130.699 123.699 111 148 111H408L373 181C365.546 195.908 350.308 205 333.641 205H312C305.373 205 300 210.373 300 217V354C300 378.301 280.301 398 256 398C231.699 398 212 378.301 212 354V217C212 210.373 206.627 205 200 205H154C126.386 205 104 182.614 104 155Z" fill="url(#ribbon)"/>
+</svg>

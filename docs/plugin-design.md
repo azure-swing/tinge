@@ -49,6 +49,15 @@ manifest 采用官方仍支持的 .codex-plugin/plugin.json 兼容布局，MCP �
 PLUGIN_ROOT 指向实际安装目录；不绑定开发机器路径，不自动修改宿主个人配置。
 plugin/ 是构建模板，二进制与参考资料由脚本装入最终包；安装应使用生成的包。
 
+在项目目录执行 `codex plugin marketplace add ./target/plugin-package`，再执行
+`codex plugin add tinge@tinge-local` 安装到 Codex。已安装的开发包可用相同 add 命令刷新，
+无需单独配置 MCP。2026-10-09 已在本机桌面版自带安装器验证 installed/enabled 状态，
+并验证安装缓存程序与正式 release 的 SHA-256 一致；这不代表其他宿主已验收。
+
+界面图标由 manifest 的 logo/logoDark/composerIcon 引用 plugin/assets 下的 SVG。
+彩色图标使用连续 T 形和统一渐变；小图标保留同一轮廓，去除底板、收紧留白并使用纯紫色。
+tinge.png 是彩色 SVG 的 512px 预览，修改轮廓时同步更新小图标和预览。
+
 通用 STDIO 客户端仍可直接配置 exe + args:["mcp"]。
 已有 MCP 调用需要把 `name:tinge_agent, arguments:{command:render,...}` 改为
 `name:tinge_render, arguments:{...}`。
