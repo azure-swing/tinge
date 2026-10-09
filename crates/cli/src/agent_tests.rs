@@ -356,3 +356,143 @@ fn managed_preview_reuses_filename_and_exports_need_explicit_draft_flag() {
     assert_eq!(plan["files"].as_array().unwrap().len(), 2);
     assert_eq!(plan["retained"].as_array().unwrap().len(), 1);
 }
+
+#[test]
+fn analysis_cache_distinguishes_source_color_interpretation() {
+    let (dir, srgb) = project();
+    let linear = dir.path().join("linear.vcolor");
+    vibecolor_project::init(
+        &linear,
+        &dir.path().join("source.png"),
+        Some(vibecolor_color::ColorSpace {
+            transfer: vibecolor_color::Transfer::Linear,
+            ..Default::default()
+        }),
+    )
+    .unwrap();
+    let stats = |path: &PathBuf| request(json!({"command":"stats","project":path}));
+    let mut shared = Session::default();
+    let first = shared.run(stats(&srgb)).unwrap();
+    let second = shared.run(stats(&linear)).unwrap();
+    let fresh = Session::default().run(stats(&linear)).unwrap();
+    assert_ne!(first["analysis"]["rgb_mean"], fresh["analysis"]["rgb_mean"]);
+    assert_eq!(second["analysis"], fresh["analysis"]);
+    assert_eq!(
+        shared.run(stats(&srgb)).unwrap()["analysis"],
+        first["analysis"]
+    );
+}
+
+#[test]
+fn full_diagnostics_do_not_implicitly_transfer_pixels() {
+    let (_dir, path) = project();
+    let mut session = Session::default();
+    for (inline, expected) in [
+        (None, "resource_link"),
+        (Some(false), "resource_link"),
+        (Some(true), "image"),
+    ] {
+        let mut arguments = json!({"project":path,"_response":"full"});
+        if let Some(inline) = inline {
+            arguments["_inline_image"] = json!(inline);
+        }
+        let result = protocol::handle(&mut session, json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"vibecolor_preview","arguments":arguments}}), &mut true).unwrap();
+        assert_eq!(result["result"]["isError"], false);
+        assert_eq!(result["result"]["content"][1]["type"], expected);
+        assert!(
+            result["result"]["structuredContent"]
+                .get("analysis")
+                .is_none()
+        );
+    }
+}
+
+#[test]
+fn compact_analyze_omits_histograms_in_direct_and_job_results() {
+    let (dir, _path) = project();
+    let mut session = Session {
+        persistent: true,
+        ..Default::default()
+    };
+    let body = json!({"command":"analyze","input":dir.path().join("source.png")});
+    let direct = call(&mut session, body.clone(), true);
+    assert_eq!(direct["isError"], false);
+    assert!(direct["structuredContent"].get("histogram").is_none());
+    assert!(call(&mut session, body.clone(), false)["structuredContent"]["histogram"].is_object());
+    let submitted = call(
+        &mut session,
+        json!({"command":"job_submit","request":body}),
+        true,
+    );
+    let id = submitted["structuredContent"]["job"].as_u64().unwrap();
+    await_job(&mut session, id);
+    let done = call(&mut session, json!({"command":"job_status","job":id}), true);
+    assert!(
+        done["structuredContent"]["result"]
+            .get("histogram")
+            .is_none()
+    );
+    assert!(done["structuredContent"]["result"]["rgb_mean"].is_array());
+}
+
+#[test]
+fn preview_failure_keeps_commit_and_signals_failure_in_mcp_and_jobs() {
+    let (dir, path) = project();
+    // A directory cannot be replaced with PNG bytes, even with overwrite=true.
+    let output = dir.path().join("blocked.png");
+    std::fs::create_dir(&output).unwrap();
+    let mut session = Session {
+        persistent: true,
+        ..Default::default()
+    };
+    let body = json!({"command":"edit_preview","project":path,"expect_revision":0,"edits":edits(),"output":output,"overwrite":true});
+    let result = call(&mut session, body, true);
+    assert_eq!(result["isError"], true);
+    assert!(
+        result["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("failed")
+    );
+    assert_eq!(result["structuredContent"]["committed"], true);
+    assert_eq!(result["structuredContent"]["revision"], 1);
+    assert!(result["structuredContent"]["preview_error"].is_object());
+    assert!(output.is_dir());
+    let submitted = call(
+        &mut session,
+        json!({"command":"job_submit","idempotency_key":"partial","request":{"command":"edit_preview","project":path,"expect_revision":1,"edits":edits(),"output":output,"overwrite":true}}),
+        true,
+    );
+    let done = await_job(
+        &mut session,
+        submitted["structuredContent"]["job"].as_u64().unwrap(),
+    );
+    assert_eq!(done["status"], "failed");
+    assert_eq!(done["commit"]["revision"], 2);
+    assert_eq!(done["result"]["committed"], true);
+    assert!(dir.path().join("source.png").exists());
+}
+
+#[test]
+fn synchronous_preview_resource_index_is_bounded_and_latest_is_readable() {
+    let (_dir, path) = project();
+    let mut session = Session::default();
+    for revision in 0..66 {
+        session.run(request(json!({"command":"apply","project":path,"expect_revision":revision,"edits":[{"type":"upsert_node","node":{"id":"light","op":{"type":"exposure","stops":revision as f64 / 50.0}}},{"type":"set_output","id":"light"}]}))).unwrap();
+        let result = session
+            .run(request(
+                json!({"command":"preview","project":path,"include_analysis":false}),
+            ))
+            .unwrap();
+        let uri = result["resource_uri"].as_str().unwrap();
+        assert!(session.previews.len() <= 64);
+        let read = protocol::handle(
+            &mut session,
+            json!({"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":uri}}),
+            &mut true,
+        )
+        .unwrap();
+        assert!(read["result"]["contents"][0]["blob"].is_string());
+    }
+    assert_eq!(session.previews.len(), 64);
+}

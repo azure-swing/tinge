@@ -143,14 +143,7 @@ impl Jobs {
                             session.previews.clear();
                             continue;
                         }
-                        let failed = data.get("preview_error").is_some()
-                            || data
-                                .get("failed")
-                                .and_then(Value::as_array)
-                                .is_some_and(|files| !files.is_empty())
-                            || data
-                                .get("registry_error")
-                                .is_some_and(|error| !error.is_null());
+                        let failed = crate::outcome::failed(&data);
                         record.state["status"] = json!(if failed { "failed" } else { "completed" });
                         for uri in resource_uris(&data) {
                             if let Some(path) = session.previews.get(&uri) {

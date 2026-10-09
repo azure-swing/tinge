@@ -7,6 +7,55 @@ use std::{
 fn exe() -> Command {
     Command::new(env!("CARGO_BIN_EXE_vibecolor"))
 }
+
+#[test]
+fn committed_edit_with_failed_preview_is_reported_by_cli_jsonl_and_batch() {
+    let dir = tempfile::tempdir().unwrap();
+    let source = dir.path().join("source.png");
+    let project = dir.path().join("image.vcolor");
+    let frame = vibecolor_core::Frame::new(2, 1, vec![[0.1, 0.2, 0.3, 1.0]; 2]).unwrap();
+    vibecolor_io::export(&frame, &source, Default::default()).unwrap();
+    vibecolor_project::init(&project, &source, None).unwrap();
+    for (index, args) in [vec!["run", "-"], vec!["serve"], vec!["run", "-"]]
+        .iter()
+        .enumerate()
+    {
+        let output = dir.path().join(format!("blocked-{index}.png"));
+        std::fs::create_dir(&output).unwrap();
+        let mut body = json!({"command":"edit_preview","project":project,"expect_revision":index,"edits":[{"type":"upsert_node","node":{"id":"exp","op":{"type":"exposure","stops":0.2}}},{"type":"set_output","id":"exp"}],"output":output,"overwrite":true});
+        if index == 2 {
+            body = json!({"command":"batch","stop_on_error":true,"jobs":[body,{"command":"capabilities"}]});
+        }
+        let mut child = exe()
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        writeln!(child.stdin.take().unwrap(), "{body}").unwrap();
+        let result = child.wait_with_output().unwrap();
+        // Persistent servers report failure per response and remain usable.
+        assert_eq!(result.status.success(), index == 1);
+        let response: Value = serde_json::from_slice(&result.stdout).unwrap();
+        assert_eq!(response["ok"], false);
+        let data = if index == 2 {
+            assert_eq!(response["data"]["failures"], 1);
+            assert_eq!(response["data"]["results"].as_array().unwrap().len(), 1);
+            &response["data"]["results"][0]["data"]
+        } else {
+            &response["data"]
+        };
+        assert!(data["preview_error"].is_object());
+        assert_eq!(data["committed"], true);
+        assert_eq!(data["revision"], index + 1);
+        assert_eq!(
+            vibecolor_project::load(&project).unwrap().revision,
+            index as u64 + 1
+        );
+        assert!(output.is_dir());
+    }
+}
 #[test]
 fn nested_batch_failure_propagates_and_stops() {
     let request = json!({"command":"batch","stop_on_error":true,"jobs":[{"command":"batch","jobs":[{"command":"inspect","input":"a-file-that-does-not-exist.png"}]},{"command":"capabilities"}]});

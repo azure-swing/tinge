@@ -84,6 +84,13 @@ JSON-RPC 2.0，一行一个消息，无 Content-Length 帧。stdout 仅协议，
 
 调用失败以 isError 返回（包括版本冲突、部分预览/清理失败和 failed 任务状态），协议方法/参数错误使用 JSON-RPC error。未知工具、command 注入、错误业务参数返回工具错误。preview 资源只枚举和读取当前服务会话生成的 URI，读取验证 hash；重启后需要重新生成。原图和任意路径不作为资源开放。MCP 资源 URI 的可用性不等于磁盘项目状态。
 
+CLI、JSONL、MCP、batch 和后台任务使用相同的部分失败判定。编辑已提交但
+预览失败时，CLI 的 stdout 保留完整 `{ok:false,data:...}` 回执并以 1 退出；
+JSONL 返回 `ok:false` 并继续服务；MCP 返回 `isError:true`，简短文字也标明失败。
+必须检查 `committed`、`revision`、`preview_error`，不要因失败标志直接重做编辑。
+清理的 `failed` 文件列表或非空 `registry_error` 同样传播失败。
+仅有 `workfile_warning`（例如导出到项目目录之外）仍表示导出成功、有登记警告。
+
 ## 缓存、进度和批量
 
 Engine 的内容 key 包含源像素、算子、上游 key、mask 参数与 LUT/bitmap 内容；项目源图解码以 source hash+声明色彩空间+完整 OCIO pipeline 缓存。预算默认 512 MiB，超预算清空旧缓存。不是持久 tile cache。

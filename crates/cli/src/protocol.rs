@@ -97,6 +97,12 @@ fn compact(mut data: Value, command: &str) -> Value {
     if let Some(analysis) = data.get_mut("analysis").and_then(Value::as_object_mut) {
         analysis.remove("histogram");
     }
+    // analyze returns its statistics at the root, including inside job results.
+    if data.get("working_space").is_some()
+        && let Some(object) = data.as_object_mut()
+    {
+        object.remove("histogram");
+    }
     if let Some(preview) = data.get_mut("preview")
         && preview.get("resource_uri").is_some()
     {
@@ -151,10 +157,7 @@ pub fn jsonl(session: &mut Session) -> Result<()> {
             .and_then(|r| session.run(r));
         let response = match result {
             Ok(data) => {
-                let failed = data
-                    .get("failures")
-                    .and_then(Value::as_u64)
-                    .is_some_and(|n| n > 0);
+                let failed = crate::outcome::failed(&data);
                 json!({"ok":!failed,"data":data})
             }
             Err(e) => json!({"ok":false,"error":crate::api::error_json(&e)}),
@@ -237,7 +240,7 @@ pub fn handle(session: &mut Session, message: Value, initialized: &mut bool) -> 
                 inline.as_ref().is_none_or(Value::is_boolean),
                 "_inline_image must be boolean"
             );
-            let inline = inline.and_then(|v| v.as_bool()).unwrap_or(!lean);
+            let inline = inline.and_then(|v| v.as_bool()).unwrap_or(false);
             let result = crate::tools::request(tool, arguments);
             let command = result
                 .as_ref()
@@ -247,21 +250,9 @@ pub fn handle(session: &mut Session, message: Value, initialized: &mut bool) -> 
             match result {
                 Ok(data) => {
                     let data = if lean { compact(data, &command) } else { data };
-                    let failed = data
-                        .get("failures")
-                        .and_then(Value::as_u64)
-                        .is_some_and(|n| n > 0)
-                        || data.get("preview_error").is_some()
-                        || data.get("status").is_some_and(|status| status == "failed")
-                        || data
-                            .get("failed")
-                            .and_then(Value::as_array)
-                            .is_some_and(|files| !files.is_empty())
-                        || data
-                            .get("registry_error")
-                            .is_some_and(|error| !error.is_null());
+                    let failed = crate::outcome::failed(&data);
                     let mut content = vec![
-                        json!({"type":"text","text":if lean { format!("VibeColor {command}: {}", data.get("status").and_then(Value::as_str).unwrap_or("completed")) } else { serde_json::to_string(&data)? }}),
+                        json!({"type":"text","text":if lean { format!("VibeColor {command}: {}", if failed { "failed; inspect structuredContent for committed changes and recovery details" } else { data.get("status").and_then(Value::as_str).unwrap_or("completed") }) } else { serde_json::to_string(&data)? }}),
                     ];
                     for uri in crate::jobs::resource_uris(&data) {
                         if inline {
