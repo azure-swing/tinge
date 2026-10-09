@@ -1,6 +1,6 @@
 {
   "name": "tinge",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Edit local photos and RAW images with revisioned color recipes, previews, masks and exports.",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
