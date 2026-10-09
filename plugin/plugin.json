@@ -1,0 +1,22 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tinge",
+  "version": "0.2.4",
+  "description": "Edit local photos and RAW images with revisioned color recipes, previews, masks and exports.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Tinge",
+        "composerIcon": "./assets/tinge-small.svg",
+        "logo": "./assets/tinge.svg",
+        "logoDark": "./assets/tinge.svg",
+        "shortDescription": "Local photo grading with previews and revision history",
+        "defaultPrompt": [
+          "Adjust the exposure of this local photo and show a preview.",
+          "Compare two revisions of my Tinge project.",
+          "Export revision 3 as a 16-bit PNG."
+        ]
+      }
+    }
+  }
+}

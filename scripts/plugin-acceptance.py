@@ -102,15 +102,29 @@ def main():
         report = {'tool_definition_bytes': len(json.dumps(catalog, ensure_ascii=False, separators=(',', ':')).encode('utf-8')), 'basic_tool_definition_bytes': basic_bytes, 'basic_adjustment_process': 'passed', 'named_tools': len(tools), 'contract': 'passed', 'prompt_cases': len(fixtures), 'selection_evaluation': 'not_run'}
         if args.package:
             root = args.package.resolve()
-            manifest = json.loads((root / '.codex-plugin/plugin.json').read_text(encoding='utf-8'))
+            manifest = json.loads((root / 'plugin.json').read_text(encoding='utf-8'))
+            assert manifest['$schema'] == 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'
             assert manifest['name'] == 'tinge'
-            assert manifest['interface']['displayName'] == 'Tinge'
+            assert manifest['extensions']['com.openai']['interface']['displayName'] == 'Tinge'
             assert manifest['version'] == client.data({'command': 'capabilities'})['version']
-            wiring = json.loads((root / manifest['mcpServers']).read_text(encoding='utf-8'))['mcpServers']['tinge']
-            executable = Path(wiring['command'].replace('${PLUGIN_ROOT}', str(root)))
+            mcp = json.loads((root / 'mcp.json').read_text(encoding='utf-8'))
+            assert mcp['$schema'] == 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json'
+            wiring = mcp['mcpServers']['tinge']
+            assert wiring['type'] == 'stdio' and wiring['command'] == './bin/tinge.exe'
+            executable = root / wiring['command']
             assert executable.name == 'tinge.exe', executable
             assert executable.is_file() and wiring['args'] == ['mcp']
-            skill = root / manifest['skills'] / 'photo-workflow/SKILL.md'
+            import hashlib
+            assert hashlib.sha256(executable.read_bytes()).digest() == hashlib.sha256(args.executable.read_bytes()).digest()
+            packaged = agent.MCP(executable)
+            try:
+                assert packaged.data({'command': 'capabilities'})['version'] == manifest['version']
+                assert len(packaged.rpc('tools/list')['tools']) == len(catalog)
+            finally:
+                packaged.close()
+            assert not (root / '.mcp.json').exists()
+            assert not (root / '.codex-plugin/plugin.json').exists()
+            skill = root / 'skills/photo-workflow/SKILL.md'
             assert skill.is_file()
             import re
             for link in re.findall(r'\]\((references/[^)]+)\)', skill.read_text(encoding='utf-8')):

@@ -12,6 +12,11 @@ try {
     $packageRoot = Join-Path $taskRoot 'target/plugin-package'
     $package = Join-Path $packageRoot 'tinge'
     New-Item -ItemType Directory -Path $package -Force | Out-Null
+    # Remove only obsolete generated wiring when upgrading the fixed package directory.
+    foreach ($legacy in @('.mcp.json', '.codex-plugin/plugin.json')) {
+        $legacyPath = Join-Path $package $legacy
+        if (Test-Path -LiteralPath $legacyPath) { Remove-Item -LiteralPath $legacyPath }
+    }
     Get-ChildItem -LiteralPath (Join-Path $taskRoot 'plugin') -Force | Copy-Item -Destination $package -Recurse -Force
     $binDirectory = Join-Path $package 'bin'
     New-Item -ItemType Directory -Path $binDirectory -Force | Out-Null

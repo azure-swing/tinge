@@ -8,7 +8,7 @@ ocio-rs = { path = "vendor/ocio-rs" }
 ocio-sys = { path = "vendor/ocio-sys" }
 
 [workspace.package]
-version = "0.2.3"
+version = "0.2.4"
 edition = "2024"
 license = "MIT"
 rust-version = "1.95"

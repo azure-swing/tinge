@@ -1,5 +1,9 @@
 # 当前交接状态
 
+2026-10-10 / 0.2.4：修复桌面宿主无法启动 Tinge 的插件路径问题。旧兼容布局的 command 使用未展开的 ${PLUGIN_ROOT}，宿主报 os error 3；改用标准 Agent Plugins 1.0 根 manifest/MCP 配置及包内相对 stdio 路径。包验收不再自行替换该变量，新增包内二进制 SHA-256/版本/握手检查及真实 Codex 宿主工具发现脚本。宿主验收只检查启动及目录，不代表模型工具选择或全部宿主兼容性。
+
+Rustfmt、Clippy `-D warnings`、完整 workspace 139 项测试、正式 release 构建、MCP/Agent 与包验收、前端 5 项测试通过。使用桌面版自带 Codex app-server 复现旧包 0 工具/os error 3；安装 0.2.4 后返回 serverInfo.version=0.2.4、42 工具及空 toolsError。正式程序、生成包与安装缓存程序的 SHA-256 完全一致；真实 CR3 导入、调色、预览及全尺寸导出另行验证。报告见 `artifacts/tinge-host-before.json`、`artifacts/tinge-host-after.json` 及 `artifacts/tinge-*-acceptance-0.2.4.json`。
+
 2026-10-10 / 0.2.3：撤销本地对查看器选区修复的回退，恢复安全的选区还原和复杂选区提示，并重新构建发布程序及插件包，确保本地交付采用修复后的代码。
 
 2026-10-10 / 评审问题修复：查看器只将简单几何和左侧按绘制顺序组合的加减选区恢复为可编辑笔画；复杂右侧分组、羽化/旋转及超出 12 区域的选区保留原始记录，并显示不可编辑说明，避免 A − (B − C) 被错误展开。新增前端回归覆盖区域往返一致性、复杂结构拒绝恢复和持续提示。

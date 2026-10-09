@@ -45,13 +45,15 @@ MCP 连接名及 Skill 依赖同步为 `tinge`。原生二进制统一为 `tinge
 脚本不会自动终止进程或另建可执行版本。已有最新构建可加 -SkipBuild，
 非默认二进制路径可用 -Executable 指定。包内包括 tinge/ 插件、原生 exe、许可证、
 工作流 Skill/参考资料和 .agents/plugins/marketplace.json。
-manifest 采用官方仍支持的 .codex-plugin/plugin.json 兼容布局，MCP 使用 .mcp.json。
-PLUGIN_ROOT 指向实际安装目录；不绑定开发机器路径，不自动修改宿主个人配置。
+manifest 采用根目录 plugin.json / mcp.json 的 Agent Plugins 1.0 标准布局。
+stdio 使用 type:stdio 和包内相对路径 ./bin/tinge.exe，由宿主解析成实际安装路径；
+不在旧版 .mcp.json 的 command 中使用未展开的 ${PLUGIN_ROOT}，不绑定开发机器路径，
+打包脚本只移除固定生成目录内的旧配置文件，不自动修改宿主个人配置。
 plugin/ 是构建模板，二进制与参考资料由脚本装入最终包；安装应使用生成的包。
 
 在项目目录执行 `codex plugin marketplace add ./target/plugin-package`，再执行
 `codex plugin add tinge@tinge-local` 安装到 Codex。已安装的开发包可用相同 add 命令刷新，
-无需单独配置 MCP。2026-10-09 已在本机桌面版自带安装器验证 installed/enabled 状态，
+无需单独配置 MCP。此前只验证 installed/enabled 状态未能发现启动路径错误；0.2.4 增加实际宿主工具发现验收，
 并验证安装缓存程序与正式 release 的 SHA-256 一致；这不代表其他宿主已验收。
 
 界面图标由 manifest 的 logo/logoDark/composerIcon 引用 plugin/assets 下的 SVG。
@@ -80,6 +82,8 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 python scripts/agent-acceptance.py --executable target/release/tinge.exe
 python scripts/plugin-acceptance.py --executable target/release/tinge.exe --package '<生成根目录>/tinge'
+# 安装新版后，直接通过桌面版自带 Codex 的 app-server 验证宿主启动及工具目录，无模型调用
+python scripts/plugin-host-acceptance.py --codex '<桌面版 codex.exe 路径>' --version 0.2.4
 ```
 
 工具选择样例在 tests/plugin-prompts.json。目标宿主回放每个 prompt，保存
