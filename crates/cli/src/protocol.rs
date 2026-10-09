@@ -10,6 +10,10 @@ use std::{
     sync::OnceLock,
 };
 
+const LATEST_PROTOCOL: &str = "2025-11-25";
+// These versions support structuredContent and resource_link tool results.
+const SUPPORTED_PROTOCOLS: &[&str] = &[LATEST_PROTOCOL, "2025-06-18"];
+
 fn request_schema() -> &'static Value {
     static SCHEMA: OnceLock<Value> = OnceLock::new();
     SCHEMA.get_or_init(|| serde_json::to_value(schemars::schema_for!(Request)).unwrap())
@@ -203,11 +207,11 @@ pub fn handle(session: &mut Session, message: Value, initialized: &mut bool) -> 
             let requested = params
                 .get("protocolVersion")
                 .and_then(Value::as_str)
-                .unwrap_or("2025-11-25");
-            let protocol = if ["2025-11-25", "2025-06-18", "2024-11-05"].contains(&requested) {
+                .unwrap_or(LATEST_PROTOCOL);
+            let protocol = if SUPPORTED_PROTOCOLS.contains(&requested) {
                 requested
             } else {
-                "2025-11-25"
+                LATEST_PROTOCOL
             };
             *initialized = true;
             session.persistent = true;

@@ -1,5 +1,11 @@
 # 当前交接状态
 
+2026-10-10 / 评审问题修复：查看器只将简单几何和左侧按绘制顺序组合的加减选区恢复为可编辑笔画；复杂右侧分组、羽化/旋转及超出 12 区域的选区保留原始记录，并显示不可编辑说明，避免 A − (B − C) 被错误展开。新增前端回归覆盖区域往返一致性、复杂结构拒绝恢复和持续提示。
+
+MCP 仅协商支持 structuredContent/resource_link 的 2025-11-25、2025-06-18；旧版/未知版本提议返回 2025-11-25，客户端须核对支持情况。新增真实进程回归覆盖两个受支持版本的项目摘要/预览结果，以及旧版/未知提议的握手响应。README、协议、查看器和覆盖表同步修正。请求/配方/编辑序列化类型未变，工具目录仍为 42 项。
+
+Rustfmt、Clippy `-D warnings`、完整 workspace 139 项测试、正式 release 构建、MCP/Agent 验收、前端 5 项测试和真实 HTTP 查看器验收通过。记录见 `artifacts/design-review-fixes-2026-10-10/`。真实模型选择、旧版 SDK 和浏览器视觉验收未执行；这次修复不代表完整 Resolve/Lightroom 功能对等。
+
 2026-10-09 / 工具架构收窄：MCP 同步/后台共用工具，以 background:true 执行后台，移除九项 submit_*，目录 51→42。analyze 只分析源图，项目配方用 stats；lut_bake 直接接受 project/revision，完整配方保留在高级编辑/grade/validate。CLI/JSONL 原生请求不变。公共参数由原生类型派生，收窄后删除不可达定义；后台仍复用原队列、幂等与部分失败回执。支持后台的工具静态 readOnlyHint=false，因为排队会创建会话任务。
 
 目录 269,768→159,421 字节、66,816→38,889 参考 tokens（-41.80%）；adjust 748，基础三工具 1,519。所有 42 项完整 schema、后台/key 条件校验通过；按新接口边界归一化后，公共参数 7,435 次合法与 58,090 次非法样例新旧结果一致。完整 Rust 回归、Clippy、正式 release、MCP 后台编辑幂等/源图分析/项目 LUT、Agent 及查看器验收通过。记录见 `artifacts/architecture-context-measurement.json`、`artifacts/architecture-contract-validation.json`。

@@ -88,7 +88,7 @@ stats 分位/均值在 scene-linear sRGB 中测量，直方图在编码 sRGB 中
 
 `cutout {input,output,options,matte?,input_space?,color_pipeline?,raw_develop?,bit_depth?,output_space?,linear_unit_nits?,overwrite?,asset_base?}` 执行无模型颜色/GrabCut/trimap 抠像。options 与 `op.type=cutout` 共用 schema；结构化调用返回 alpha 求解、工作尺寸和警告。matte 是不做颜色转换的独立 16 位灰度 PNG，透明输出支持 PNG、8/16 位 TIFF、EXR。参数、标记坐标、精修限制和项目冻结规则见 [抠像工作流](cutout-workflow.md)。抠像输出不会自动注册 MCP 预览资源，项目 preview 仍使用既有资源协议。
 
-JSON-RPC 2.0，一行一个消息，无 Content-Length 帧。stdout 仅协议，诊断/可选进度在 stderr。支持协议版本 2025-11-25、2025-06-18、2024-11-05 的共同工具与资源子集。尚未完成官方 SDK 客户端兼容矩阵，仅有真实进程协议测试。
+JSON-RPC 2.0，一行一个消息，无 Content-Length 帧。stdout 仅协议，诊断/可选进度在 stderr。支持协议版本 2025-11-25 和 2025-06-18，工具结果使用 structuredContent 和 resource_link。不协商 2024-11-05；收到旧版或未知版本提议时返回 2025-11-25，客户端须检查是否支持该响应版本再继续。尚未完成官方 SDK 客户端兼容矩阵，仅有真实进程协议测试。
 
 所有命名工具在 structuredContent 返回数据，compact/full 的 text 均只给短状态，不重复输出 JSON，图片使用 resource_link；`_inline_image:true` 可直接显示图片，`_response:"full"` 可取完整诊断。preview 的 include_analysis 默认为 false，与返回模式独立。这两个下划线字段仅属于 MCP 外层，不能嵌入 CLI/JSONL Request。同步与后台工具的 schema 都严格拒绝未知字段；同名工具只能执行自己的操作。
 

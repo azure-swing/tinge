@@ -178,6 +178,64 @@ fn cli_project_lifecycle_and_json_protocol() {
     assert_eq!(tinge_project::load(&project).unwrap().revision, 2);
 }
 #[test]
+fn mcp_negotiates_only_versions_that_support_its_result_format() {
+    let dir = tempfile::tempdir().unwrap();
+    let source = dir.path().join("input.png");
+    let project = dir.path().join("image.tinge");
+    let frame = tinge_core::Frame::new(1, 1, vec![[0.18, 0.18, 0.18, 1.0]]).unwrap();
+    tinge_io::export(&frame, &source, Default::default()).unwrap();
+    tinge_project::init(&project, &source, None).unwrap();
+    for requested in ["2025-11-25", "2025-06-18", "2024-11-05", "unknown"] {
+        let supported = matches!(requested, "2025-11-25" | "2025-06-18");
+        let mut child = exe()
+            .arg("mcp")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut stdin = child.stdin.take().unwrap();
+        writeln!(stdin, "{}", json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":requested,"capabilities":{},"clientInfo":{"name":"version-test","version":"1"}}})).unwrap();
+        if supported {
+            writeln!(
+                stdin,
+                "{}",
+                json!({"jsonrpc":"2.0","method":"notifications/initialized"})
+            )
+            .unwrap();
+            writeln!(stdin, "{}", json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"tinge_project_info","arguments":{"project":project}}})).unwrap();
+            writeln!(stdin, "{}", json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"tinge_preview","arguments":{"project":project,"max_edge":32}}})).unwrap();
+        }
+        drop(stdin);
+        let output = child.wait_with_output().unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let responses: Vec<Value> = String::from_utf8(output.stdout)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect();
+        assert_eq!(responses.len(), if supported { 3 } else { 1 });
+        assert_eq!(
+            responses[0]["result"]["protocolVersion"],
+            if supported { requested } else { "2025-11-25" }
+        );
+        if supported {
+            assert_eq!(responses[1]["result"]["structuredContent"]["revision"], 0);
+            assert_eq!(responses[1]["result"]["isError"], false);
+            assert_eq!(
+                responses[2]["result"]["content"][1]["type"],
+                "resource_link"
+            );
+            assert_eq!(responses[2]["result"]["isError"], false);
+        }
+    }
+}
+
+#[test]
 fn mcp_stdio_roundtrip_and_preview_image_resource() {
     let dir = tempfile::tempdir().unwrap();
     let source = dir.path().join("input.png");

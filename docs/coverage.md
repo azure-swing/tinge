@@ -58,7 +58,7 @@
 | FX09 | Super Scale / 超分辨率 | 待实现 | 模型、细节保持与输出验证 |
 | FX10 | Resolve FX 中所有图片适用算子 | 待实现 | 逐一登记和实现，不能把一个通用 effects 插槽算作完成 |
 | FX11 | OpenFX / DCTL / 插件隔离 | 待实现 | 完整宿主 ABI、参数、图像、渲染、版本和错误隔离 |
-| GE01 | Crop、resize、rotate、flip、straighten | 基础 | crop/bilinear resize、90° rotate；高质量降采样、任意角度、flip UI 待补 |
+| GE01 | Crop、resize、rotate、flip、straighten | 基础 | crop、Lanczos3 抗混叠降采样/bilinear 放大、90° rotate；任意角度、flip UI 待补 |
 | GE02 | 镜头畸变、透视、几何校正 | 基础 | k1/k2 反向采样；透视矩阵、自动校正、镜头库待补 |
 | GE03 | 色差、去边、镜头渐晕 | 待实现 | 通道径向模型、defringe、镜头 profile |
 | RW01 | 原生 RAW 解码 | 基础 | rawler 支持范围；工程 Bayer/单色 DNG 与 Canon Bayer、Fuji X-Trans、Leica 单色、Sony 四色四个真实样本；多机型/压缩模式仍待补 |
@@ -74,7 +74,7 @@
 | AG01 | 原生 CLI、JSON Schema、JSONL、MCP | 已实现 | 共用引擎，真实进程 CLI/MCP 测试 |
 | AG02 | 事务、版本冲突、分支、标签、回退 | 已实现 | OS 锁、原子提交、冲突结构化结果 |
 | AG03 | 确定性缓存和项目资产 | 基础 | 内存预算、资源内容 hash、修改检测；tile/disk cache 和随机/模型/插件版本完整锁定待补 |
-| AG04 | 常驻后台任务、进度、取消、恢复 | 基础 | JSONL/MCP 常驻、节点 stderr 进度和引擎取消；异步任务 API、进程取消、checkpoint 待补 |
+| AG04 | 常驻后台任务、进度、取消、恢复 | 基础 | JSONL/MCP 常驻、命名工具 background:true、会话内任务查询/幂等、节点进度和协作取消；重启恢复、checkpoint 和完整阶段取消覆盖待补 |
 | AG05 | Web viewer（原生后端）与宿主插件 | 基础 | 本地网页自动打开；缩放平移/100%、原图/任意修订/划分/并排、圈划、版本命名/恢复、外部 agent 修改同步；sRGB ICC 预览。专业显示/HDR、GPU/tile、打包 Codex 插件桥接待补 |
 | AG06 | GPU 和 CPU/GPU 一致性 | 待实现 | wgpu 后端、tile 执行、误差 corpus |
 

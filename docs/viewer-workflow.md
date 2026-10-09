@@ -44,6 +44,8 @@
 
 支持拖动自由圈划、椭圆，以及增加/减去区域。选区采用输出图归一化坐标 [0,1]，根据实际图片矩形换算，缩放、平移、侧栏开关不改变坐标。移动工具隐藏选区色块以查看图片颜色。网页一次圈选最多 12 个区域；羽化、精修和如何调整颜色交由 agent。
 
+重开或切换版本时，查看器恢复简单几何选区和按绘制顺序组合的加减区域。CLI/MCP 保存的复杂组合（例如 A − (B − C)）、羽化、旋转等不转换成可编辑圈划，页面会明确提示交给 agent 处理或重新圈划；原始记录继续保留，避免恢复或再次保存时改变选区含义。
+
 “保存圈选”原子追加到 `<project>.selections.json`，不添加调色节点、不改变项目 revision。字段包括唯一 ID、revision、source_hash、recipe_hash、output_node、全尺寸 width/height、timestamp、Mask 和可选 note。保存时再次检查项目头和基准。独立记录最多 1024 条/16 MiB；网页摘要显示最近 64 条，CLI 可读全部。项目搬迁时同时携带此文件和 `.assets`。
 
 ```powershell
@@ -75,4 +77,4 @@ Codex 官方 [Browser 说明](https://learn.chatgpt.com/docs/browser)介绍内�
 
 `scripts/viewer-acceptance.py` 使用实际 release 进程和 HTTP 验收预览与 CLI 字节一致、ICC 标签、P3 项目的 sRGB preview view、任意修订对比、裁切后选区基准、旧修订命名/恢复、独立 CLI 更新、MCP 读取，以及并发冲突和访问边界。报告为 `artifacts/viewer-acceptance.json`。实际 Codex 浏览器另验收圈选手势、保存对话框、缩放/比较和窄侧栏/宽屏布局；这不等于物理屏幕测色验收。
 
-前端请求合并、断连/超时、重连后历史版本和未提交选区保护，由统一入口 `node --test scripts/viewer-client.test.cjs` 验证。服务端快速切换、取消过时任务、跨标签页缓存复用和队列容量由 `cargo test -p tinge-cli --bin tinge web::tests --locked` 覆盖，无需依赖运行中的查看器日志或固定项目版本。
+前端请求合并、断连/超时、重连后历史版本和未提交选区保护、加减选区恢复后重存的区域一致性、复杂组合的不可编辑提示，由统一入口 `node --test scripts/viewer-client.test.cjs` 验证。服务端快速切换、取消过时任务、跨标签页缓存复用和队列容量由 `cargo test -p tinge-cli --bin tinge web::tests --locked` 覆盖，无需依赖运行中的查看器日志或固定项目版本。

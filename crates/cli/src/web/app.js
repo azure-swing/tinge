@@ -60,7 +60,7 @@ function updateHistory() {
 }
 function updateSelectionInfo() {
   const item = state.project?.selections.find(s => s.revision === state.result?.revision);
-  $('selectionInfo').textContent = item ? `已保存 · ${revisionName(item.revision)} · ${item.width} × ${item.height}${item.note ? `\n${item.note}` : ''}` : '圈出想要调整的区域，再保存圈选。';
+  $('selectionInfo').textContent = item ? `已保存 · ${revisionName(item.revision)} · ${item.width} × ${item.height}${item.note ? `\n${item.note}` : ''}${selectionShapes(item.mask) === null ? '\n此复杂选区暂不能在查看器中编辑，可交给 agent 处理或重新圈划。' : ''}` : '圈出想要调整的区域，再保存圈选。';
 }
 async function poll() {
   if (state.pollBusy) return;
@@ -112,7 +112,7 @@ async function requestPreview() {
     const selection = state.project.selections.find(s => s.revision === result.revision);
     const draft = state.drafts.get(result.revision);
     if (draft && !state.shapes.length) { state.shapes = structuredClone(draft.shapes); $('note').value = draft.note; state.dirty = true; }
-    else if (selection && !state.shapes.length) { const restored = flattenMask(selection.mask); if (restored.length <= 12 && restored.every(s => ['ellipse', 'polygon', 'rectangle'].includes(s.mask.type) && s.mask.feather === 0 && !s.mask.rotation)) state.shapes = restored; $('note').value = selection.note; state.dirty = false; }
+    else if (selection && !state.shapes.length) { const restored = selectionShapes(selection.mask); if (restored) state.shapes = restored; $('note').value = selection.note; state.dirty = false; }
     controls(); layout(); drawOverlay(); updateSelectionInfo();
     status(`已同步 · ${revisionName(result.revision)}${state.revision === 'latest' ? ' · 跟随 agent' : ' · 历史版本'}`);
   } catch (e) { if (generation === state.generation) { status(e.message, 'error'); toast(e.message); if (!state.result) $('empty').querySelector('strong').textContent = '预览暂时无法生成'; } }
@@ -142,13 +142,20 @@ function geometry(mask, fill) {
     default: return svg('g');
   }
 }
-function flattenMask(mask, mode = 'add') {
-  if (mask.type === 'combine' && ['union', 'subtract'].includes(mask.mode)) return mask.masks.flatMap((m, i) => flattenMask(m, mask.mode === 'subtract' && i > 0 ? 'subtract' : mode));
-  return [{ mode, mask }];
+function selectionShapes(mask) {
+  const simple = m => ['ellipse', 'polygon', 'rectangle'].includes(m.type) && m.feather === 0 && !m.rotation;
+  if (simple(mask)) return [{ mode: 'add', mask }];
+  if (mask.type !== 'combine' || !['union', 'subtract'].includes(mask.mode) || mask.masks.length < 2) return null;
+  // Only unfold the left operand. Flattening a grouped right operand can
+  // change both subtraction and a union following an earlier subtraction.
+  const first = selectionShapes(mask.masks[0]);
+  if (!first || !mask.masks.slice(1).every(simple)) return null;
+  const shapes = first.concat(mask.masks.slice(1).map(m => ({ mode: mask.mode === 'union' ? 'add' : 'subtract', mask: m })));
+  return shapes.length <= 12 ? shapes : null;
 }
 function drawOverlay() {
   const overlay = $('overlay'); overlay.replaceChildren();
-  const shapes = state.shapes.flatMap(s => flattenMask(s.mask, s.mode));
+  const shapes = [...state.shapes];
   if (state.drawing?.mask) shapes.push({ mode: state.selectionMode, mask: state.drawing.mask });
   const defs = svg('defs'); const mask = svg('mask', { id: 'selectionArea', maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: 1, height: 1, 'mask-type': 'luminance' });
   mask.append(svg('rect', { width: 1, height: 1, fill: 'black' }));
