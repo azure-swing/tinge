@@ -151,16 +151,57 @@ fn compact_unions(schema: &mut Value) {
             packed.push(variant);
         }
         *variants = packed;
+        // (C & A) | (C & B) == C & (A | B), also for exclusive unions.
+        // Keep additionalProperties on each branch: moving it would widen inputs.
+        let common_required = variants.first().and_then(|first| {
+            let required = first.get("required")?.as_array()?;
+            variants
+                .iter()
+                .all(|v| v.get("required").is_some_and(Value::is_array))
+                .then(|| {
+                    required
+                        .iter()
+                        .filter(|field| {
+                            field.is_string()
+                                && variants
+                                    .iter()
+                                    .all(|v| v["required"].as_array().unwrap().contains(field))
+                        })
+                        .cloned()
+                        .collect::<Vec<_>>()
+                })
+        });
+        if let Some(common) = common_required.filter(|v| !v.is_empty() && variants.len() > 1) {
+            for variant in variants {
+                let fields = variant["required"].as_array_mut().unwrap();
+                fields.retain(|v| !common.contains(v));
+                if fields.is_empty() {
+                    variant.as_object_mut().unwrap().remove("required");
+                }
+            }
+            let fields = map
+                .entry("required")
+                .or_insert(json!([]))
+                .as_array_mut()
+                .unwrap();
+            for field in common {
+                if !fields.contains(&field) {
+                    fields.push(field);
+                }
+            }
+        }
     }
 }
 
-fn share_number_arrays(schema: &mut Value) {
-    for (length, name) in [(2, "NumberPair"), (3, "NumberTriple"), (4, "NumberQuad")] {
+fn share_arrays(schema: &mut Value) {
+    let shapes = [(2, "NumberPair"), (3, "NumberTriple"), (4, "NumberQuad")]
+        .into_iter()
+        .map(|(length, name)| (name, json!({"type":"array","items":{"type":"number"},"minItems":length,"maxItems":length})))
+        .chain(std::iter::once(("StringList", json!({"type":"array","items":{"type":"string"}}))));
+    for (name, shape) in shapes {
         if schema["$defs"].get(name).is_some() {
             continue;
         }
-        let shape =
-            json!({"type":"array","items":{"type":"number"},"minItems":length,"maxItems":length});
         let reference = json!({"$ref":format!("#/$defs/{name}")});
         let matches = |value: &Value| {
             let Some(mut core) = value.as_object().cloned() else {
@@ -255,13 +296,84 @@ fn inline_small_definitions(schema: &mut Value) {
 
 pub fn compact(schema: &mut Value) {
     visit_mut(schema, &mut compact_unions);
-    share_number_arrays(schema);
+    share_arrays(schema);
     inline_small_definitions(schema);
+}
+
+/// MCP wording only; leave serialized data and developer API docs untouched.
+pub fn simplify_descriptions(schema: &mut Value) {
+    visit_mut(schema, &mut |value| {
+        let replacement = match value.get("description").and_then(Value::as_str) {
+            Some(
+                "Legacy string configs remain byte-for-byte compatible in revision hashes."
+                | "Versioned names make built-in configs reproducible across OCIO upgrades.",
+            ) => "",
+            Some("Immutable OCIOZ package, verified before any cache or processor is used.") => {
+                "OCIOZ package path and content hash."
+            }
+            Some(
+                "An input/display chain around scene-linear grading.\nDisplay outputs are tagged with the corresponding file colorimetry.",
+            ) => "Input/display chain around scene-linear grading.",
+            Some(
+                "Kang 2002 Planckian-locus fit with signed normal offset in CIE 1960 uv.\nPositive Duv describes a greener source white, compensated by camera gains.",
+            ) => {
+                "Source white in kelvin and signed CIE 1960 uv tint. Positive Duv compensates a greener source."
+            }
+            Some("Native weight-free keying / interactive segmentation / alpha matting.") => {
+                "Color keying, interactive segmentation or alpha matting."
+            }
+            _ => return,
+        };
+        if replacement.is_empty() {
+            value.as_object_mut().unwrap().remove("description");
+        } else {
+            value["description"] = json!(replacement);
+        }
+    });
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn union_required_fields_are_factored_without_opening_branches() {
+        for key in ["oneOf", "anyOf"] {
+            let branch = |tag: &str, field: &str| json!({"type":"object","properties":{"type":{"const":tag},"source":{"type":"string"},field:{"type":"number"}},"required":["type","source",field],"additionalProperties":false});
+            let mut schema = json!({"required":["source"],key:[branch("a","x"),branch("b","y")]});
+            compact(&mut schema);
+            assert_eq!(schema["required"], json!(["source", "type"]));
+            for (i, field) in ["x", "y"].iter().enumerate() {
+                assert_eq!(schema[key][i]["required"], json!([field]));
+                assert_eq!(schema[key][i]["additionalProperties"], false);
+            }
+        }
+    }
+
+    #[test]
+    fn wording_changes_visit_schemas_only() {
+        let text = "Legacy string configs remain byte-for-byte compatible in revision hashes.";
+        let data = json!({"description":text});
+        let mut schema = json!({"description":text,"default":data,"examples":[data],"properties":{"notes":{"description":text,"type":"string"}}});
+        simplify_descriptions(&mut schema);
+        assert!(schema.get("description").is_none());
+        assert!(schema["properties"]["notes"].get("description").is_none());
+        assert_eq!(schema["default"], data);
+        assert_eq!(schema["examples"], json!([data]));
+    }
+
+    #[test]
+    fn shared_string_lists_keep_defaults_and_descriptions() {
+        let list =
+            json!({"type":"array","items":{"type":"string"},"default":[],"description":"notes"});
+        let mut schema = json!({"properties":{"a":list,"b":list,"c":list,"d":list,"e":list}});
+        compact(&mut schema);
+        for field in ["a", "b", "c", "d", "e"] {
+            assert_eq!(schema["properties"][field]["default"], json!([]));
+            assert_eq!(schema["properties"][field]["description"], "notes");
+            assert_eq!(schema["properties"][field]["$ref"], "#/$defs/StringList");
+        }
+    }
 
     #[test]
     fn data_annotations_and_overlapping_branches_are_preserved() {

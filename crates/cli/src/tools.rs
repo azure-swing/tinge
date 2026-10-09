@@ -400,6 +400,7 @@ fn descriptor(tool: &Tool, background: bool) -> Value {
         .collect();
         schema["not"] = json!({"properties":null_controls});
     }
+    crate::schema_compact::simplify_descriptions(&mut schema);
     crate::schema_compact::compact(&mut schema);
     let description = if background {
         format!(
