@@ -1,5 +1,9 @@
 # 当前交接状态
 
+2026-10-09 / Agent 上下文精简：49 个工具和参数约束保留，省略 MCP number 的非标准 float/double format 注解并缩短重复说明；工具定义数组从 356,998 降至 331,551 UTF-8 字节，减少 7.13%。Skill 正文及元数据按统一换行计减少 35.46%。project_info 默认不返回历史（history_limit=0），显式分页保持可用；full 结果只在 structuredContent 返回一次，text 仅短状态。普通迭代使用 edit_preview 并按需内联图片，复用成功回执的修订，减少重复读取和轮询。
+
+Rustfmt、Clippy、完整 workspace 回归、正式 release 与 Skill 格式检查通过；真实进程回归覆盖完整统计不重复及默认历史为空。约束/安全标注等价检查和单次编辑带图验收见 `artifacts/context-acceptance.json`。这仅量化协议/文件字节和实际调用结果，不代表 token、宿主上下文注入量或真实模型工具选择已测定。
+
 2026-10-09 / 全面统一为 Tinge：正式原生程序为 `target/release/tinge.exe`，七个 Rust crate 使用 `tinge-*` 名称，MCP 服务为 `tinge`，49 个工具使用 `tinge_*` 前缀，图片资源为 `tinge://preview/…`。查看器标题、HTTP 请求头、EXR 软件标识和 alpha 属性、插件连接、脚本、示例与文档同步改名。项目示例统一使用 `.tinge` 和 `.tinge.assets/`。不提供旧名称别名或兼容层。
 
 打包脚本直接构建正式 release 程序，插件包固定输出至 `target/plugin-package/tinge`，不再生成带随机编号的独立可执行版本。改名前已按用户授权结束占用旧正式程序的三个进程。

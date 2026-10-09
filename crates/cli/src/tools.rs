@@ -315,55 +315,76 @@ pub const BACKGROUND: &[&str] = &[
     "finalize",
 ];
 
+// Float/double are nonstandard format annotations, not JSON Schema bounds.
+// Keep the number type, actual bounds, defaults and all literal values intact.
+fn slim_numeric_annotations(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            if map.get("type").is_some_and(|v| v == "number")
+                && map
+                    .get("format")
+                    .is_some_and(|v| v == "float" || v == "double")
+            {
+                map.remove("format");
+            }
+            for (key, child) in map {
+                if !matches!(key.as_str(), "default" | "const" | "enum" | "examples") {
+                    slim_numeric_annotations(child);
+                }
+            }
+        }
+        Value::Array(values) => {
+            for child in values {
+                slim_numeric_annotations(child);
+            }
+        }
+        _ => {}
+    }
+}
+
 fn descriptor(tool: &Tool, background: bool) -> Value {
     let mut schema = protocol::target_schema(tool.command).expect("reviewed command schema");
     let properties = schema["properties"].as_object_mut().unwrap();
     properties.remove("command");
-    properties.insert("_response".into(), json!({"type":"string","enum":["compact","full"],"default":"compact","description":"Result detail; full includes diagnostics such as histograms."}));
-    properties.insert("_inline_image".into(), json!({"type":"boolean","default":false,"description":"Include preview pixels instead of a resource link when available."}));
+    properties.insert("_response".into(), json!({"type":"string","enum":["compact","full"],"default":"compact","description":"Structured result detail; full retains histograms."}));
+    properties.insert("_inline_image".into(), json!({"type":"boolean","default":false,"description":"Return available preview pixels instead of a link."}));
     if tool.command == "preview" {
         properties.get_mut("include_analysis").unwrap()["default"] = json!(false);
     }
     if background {
-        properties.insert("idempotency_key".into(), json!({"type":["string","null"],"minLength":1,"maxLength":128,"description":"Session-local retry key, at most 128 UTF-8 bytes. Reuse only with identical arguments; not retained across restarts."}));
+        properties.insert("idempotency_key".into(), json!({"type":["string","null"],"minLength":1,"maxLength":128,"description":"Session-only retry key, <=128 UTF-8 bytes; reuse with identical arguments."}));
     }
     for (name, description) in [
         (
             "project",
-            "Local .tinge project path. Relative paths resolve against the server working directory.",
+            "Local .tinge path; relative to server working directory.",
         ),
-        (
-            "input",
-            "Local source file path; no upload or public URL fetching is performed.",
-        ),
+        ("input", "Local source path; no URL fetching or upload."),
         (
             "output",
-            "Local destination path. Explicit destinations cannot overwrite protected source/project assets.",
+            "Local destination; source/project/assets remain protected.",
         ),
         (
             "expect_revision",
-            "Observed current project revision; stale values fail without committing the requested change.",
+            "Observed project head; stale values reject the edit.",
         ),
         (
             "revision",
-            "Exact historical revision to use; when optional, omission selects the current revision.",
+            "Revision to use; optional omission selects current head.",
         ),
         (
             "overwrite",
-            "Explicit permission to replace an existing output file; defaults to false.",
+            "Allow replacing existing output; default false.",
         ),
         (
             "temporary",
-            "Register this export as a draft eligible for later authorized cleanup; defaults to false.",
+            "Register a draft for later authorized cleanup; default false.",
         ),
         (
             "asset_base",
-            "Local base directory for relative recipe resource paths; defaults to the server working directory.",
+            "Relative recipe resources base; default server working directory.",
         ),
-        (
-            "job",
-            "Actual job ID returned by this session's submit tool; never invent an ID.",
-        ),
+        ("job", "Job ID returned by this session's submit tool."),
     ] {
         if let Some(property) = properties.get_mut(name) {
             property["description"] = json!(description);
@@ -384,9 +405,10 @@ fn descriptor(tool: &Tool, background: bool) -> Value {
         .as_array_mut()
         .unwrap()
         .retain(|v| v != "command");
+    slim_numeric_annotations(&mut schema);
     let description = if background {
         format!(
-            "Queue this specific operation on the session's background worker. {} Returns job ID; inspect job_status. Reuse idempotency_key for identical retries in this session; after restart inspect project/output state. Queuing changes session state even for computation-only work.",
+            "Queue this operation; returns job ID for job_status. Retry keys are session-only; after restart inspect state. Queuing changes session state. {}",
             tool.description
         )
     } else {

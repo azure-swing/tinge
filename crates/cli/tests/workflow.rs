@@ -195,6 +195,8 @@ fn mcp_stdio_roundtrip_and_preview_image_resource() {
             json!({"command":"preview","project":project,"output":preview}),
         ),
         json!({"jsonrpc":"2.0","id":4,"method":"resources/list"}),
+        support::call(5, json!({"command":"stats","project":project})),
+        support::call(6, json!({"command":"project_info","project":project})),
     ];
     let mut child = exe()
         .arg("mcp")
@@ -215,7 +217,7 @@ fn mcp_stdio_roundtrip_and_preview_image_resource() {
         .lines()
         .map(|l| serde_json::from_str(l).unwrap())
         .collect();
-    assert_eq!(results.len(), 4);
+    assert_eq!(results.len(), 6);
     assert_eq!(results[2]["result"]["isError"], false);
     assert_eq!(results[2]["result"]["content"][1]["type"], "image");
     assert!(
@@ -232,4 +234,10 @@ fn mcp_stdio_roundtrip_and_preview_image_resource() {
         results[1]["result"]["tools"][0]["inputSchema"]["type"],
         "object"
     );
+    let full_stats = &results[4]["result"];
+    assert!(full_stats["structuredContent"]["analysis"]["histogram"].is_object());
+    assert!(full_stats["content"][0]["text"].as_str().unwrap().len() < 100);
+    let summary = &results[5]["result"]["structuredContent"];
+    assert_eq!(summary["history_count"], 1);
+    assert_eq!(summary["history"], json!([]));
 }

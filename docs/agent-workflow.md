@@ -6,31 +6,36 @@ MCP 使用独立命名工具，每项工具直接提供完整静态 schema 与�
 
 ## 一次调色迭代
 
-读取 `tinge_project_info` 的当前修订和配方，历史按需分页，默认 10 条，最多 100 条。
-`include_recipe` 只返回所选修订的配方，不复制全部历史配方。
-每个 MCP 工具的参数已经可见，不必先查 schema。
-`tinge_schema` 可补充查看 `op:<type>`、`mask:<type>`、`edit:<type>` 等细节。
+常规流程：读取项目 → 编辑并看预览 → 需要时导出。
+
+- 新图片可直接 init；inspect/raw_plan 只在需要检查格式、色彩解释或 RAW 参数时调用。
+- 已有项目首次用 `tinge_project_info` 和 `include_recipe:true` 读取当前图与修订。
+  历史默认不返回（history_limit=0）；查看历史时显式指定 1..100。
+- 普通调色用 `tinge_edit_preview` 合并编辑与预览；看图时加 `_inline_image:true`，
+  省去单独 preview 和 resources/read。output 可省略，使用托管路径。
+- 成功后沿用回执的 revision；发生冲突、重连或已知外部修改时再读项目。
+  compare、stats、scopes、capabilities 和完整 schema 均按需调用。
+
+例如对初始空配方的项目：
 
 ```json
-{"name":"tinge_project_info","arguments":{"project":"portrait.tinge","include_recipe":true,"history_limit":5}}
-{"name":"tinge_submit_edit_preview","arguments":{"project":"portrait.tinge","expect_revision":0,"idempotency_key":"portrait-exposure-001","edits":[{"type":"upsert_node","node":{"id":"light","op":{"type":"exposure","stops":0.2}}},{"type":"set_output","id":"light"}],"max_edge":1600}}
-{"name":"tinge_job_status","arguments":{"job":123}}
+{"name":"tinge_project_info","arguments":{"project":"portrait.tinge","include_recipe":true}}
+{"name":"tinge_edit_preview","arguments":{"project":"portrait.tinge","expect_revision":0,"edits":[{"type":"upsert_node","node":{"id":"light","op":{"type":"exposure","stops":0.2}}},{"type":"set_output","id":"light"}],"_inline_image":true}}
 ```
 
-以上为 tools/call 的 params。job 必须使用提交实际返回的 ID。
-同步编辑使用 `tinge_edit_preview`；后台提交按操作分别暴露：
-submit_edit_preview、submit_preview、submit_compare、submit_render、submit_grade、
-submit_stats、submit_analyze、submit_finalize，统一加 tinge_ 前缀。
-每个后台工具仅接受自身操作参数和可选 idempotency_key，不能嵌入另一项 request。
+以上为 tools/call 的 params；已有节点图时，将新节点连接到实际输出节点。
+每个工具已有完整静态 schema，不必先查询 `tinge_schema`；只在需要单个算子、
+蒙版或 edit 的说明时使用它。
 
-queued/running 后根据进度查询，避免紧密轮询；终态为 completed/failed/cancelled。
-`tinge_job_cancel` 请求协作取消，不能回滚已经提交的版本。
-预览失败可能仍有 committed:true 与 revision；先检查 commit 回执和项目状态，
-不能因图片未显示而重复提交修改。版本冲突后重新读取配方，再决定如何适应并发修改。
+重型工作使用对应 `tinge_submit_*`，以实际返回的 job ID 查询 job_status，
+不紧密轮询。每次新编辑使用新 idempotency_key；同会话相同请求重试复用 key。
+取消不回滚已提交编辑；预览失败也可能带 committed/revision/preview_error。
+先核对回执，不能因为没看到图片就再次编辑。冲突后核对新配方，不盲目替换版本号。
 
 ## 结果、文件与授权范围
 
-默认详细结果只放 structuredContent，text 给出短状态，图片返回 resource_link。
+结果只在 structuredContent 中返回一次；compact/full 的 text 均为短状态，不复制 JSON。
+图片默认返回 resource_link。
 需要像素时使用 resources/read 或 `_inline_image:true`；完整诊断使用 `_response:"full"`。
 这两个字段仅属于 MCP 外层。preview 的 include_analysis 默认为 false，
 完整模式也不会自动启用分析；统计可单独调用 tinge_stats。

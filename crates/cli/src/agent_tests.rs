@@ -115,6 +115,14 @@ fn project_summaries_paginate_and_legacy_show_stays_full() {
     for expected in 0..6 {
         session.run(request(json!({"command":"apply","project":path,"expect_revision":expected,"edits":edits()}))).unwrap();
     }
+    let summary = call(
+        &mut session,
+        json!({"command":"project_info","project":path}),
+        true,
+    );
+    assert_eq!(summary["structuredContent"]["revision"], 6);
+    assert_eq!(summary["structuredContent"]["history_count"], 7);
+    assert_eq!(summary["structuredContent"]["history"], json!([]));
     let page = session
         .run(request(
             json!({"command":"project_info","project":path,"history_limit":2}),

@@ -179,7 +179,7 @@ pub enum Request {
         revision: Option<u64>,
         #[serde(default)]
         include_recipe: bool,
-        #[serde(default = "history_limit")]
+        #[serde(default)]
         history_limit: usize,
         #[serde(default)]
         before_revision: Option<u64>,
@@ -345,9 +345,6 @@ pub enum Request {
         stop_on_error: bool,
     },
     ClearCache {},
-}
-fn history_limit() -> usize {
-    10
 }
 fn idle_seconds() -> u64 {
     60

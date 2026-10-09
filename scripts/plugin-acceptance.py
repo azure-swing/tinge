@@ -60,7 +60,7 @@ def main():
         fixtures = json.loads((Path(__file__).resolve().parents[1] / 'tests/plugin-prompts.json').read_text(encoding='utf-8'))['cases']
         for case in fixtures:
             assert all(name in tools for name in case['expected_tools'] + case.get('forbidden_tools', [])), case['id']
-        report = {'named_tools': len(tools), 'contract': 'passed', 'prompt_cases': len(fixtures), 'selection_evaluation': 'not_run'}
+        report = {'tool_definition_bytes': len(json.dumps(catalog, ensure_ascii=False, separators=(',', ':')).encode('utf-8')), 'named_tools': len(tools), 'contract': 'passed', 'prompt_cases': len(fixtures), 'selection_evaluation': 'not_run'}
         if args.package:
             root = args.package.resolve()
             manifest = json.loads((root / '.codex-plugin/plugin.json').read_text(encoding='utf-8'))

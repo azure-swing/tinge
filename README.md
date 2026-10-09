@@ -72,6 +72,8 @@ $vc = '.\target\release\tinge.exe'
 
 MCP 提供 49 个独立命名工具：`tinge_project_info`、`tinge_edit_preview`、`tinge_submit_edit_preview`、`tinge_selections`、`tinge_selection_save`、`tinge_render`、`tinge_cleanup_plan`、`tinge_finalize` 等。每个工具包含完整静态参数契约和显式安全标注，参数不含 `command`；通用请求和 batch 仅供 CLI/JSONL 使用。图片默认返回资源引用，统计显式请求；后台任务支持会话内幂等重试。`_response:"full"` 控制诊断详情，`_inline_image:true` 控制内联图片，`include_analysis` 控制可选分析，三者独立。见 [Agent 工作流](docs/agent-workflow.md)。
 
+常规调色只需首次读取 `tinge_project_info` → `tinge_edit_preview` 编辑并看图 → 按需 `tinge_render` 导出。项目历史默认不返回，查看时显式设置 `history_limit`。后续编辑沿用返回的修订，冲突或重连后再读项目；统计、比较和后台任务按需使用。完整结果只在结构化数据中返回一次，文字保持简短。详见 [Agent 工作流](docs/agent-workflow.md)。
+
 Tinge 的本地 Windows 插件模板在 `plugin/`，包含 manifest、STDIO 连接和图片工作流 Skill。运行 `pwsh -File scripts/package-plugin.ps1` 构建包含原生二进制、Skill 参考资料、许可证与本地 marketplace 的独立包；包固定输出到 `target/plugin-package/tinge`，使用正式 `target/release/tinge.exe`；构建前须结束占用程序的旧进程。脚本输出包根目录。没有提交或发布动作。设计依据、迁移和验收边界见 [插件规范改造](docs/plugin-design.md)。
 
 “定稿并清理”在选定最终版本后，将已登记且未修改的临时预览和其他版本临时导出移入系统回收站，保留源图/资产/全部历史/正式导出及最终修订的临时导出。实际回收当前仅支持 Windows 本地固定磁盘，其他平台或回收失败时保留文件，不回退到永久删除。查看器不写临时 PNG，Agent 预览可使用稳定缓存路径，无损 PNG/项目 JSON 进一步减少体积。详见 [临时文件工作流](docs/storage-workflow.md)。

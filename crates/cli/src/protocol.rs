@@ -92,7 +92,7 @@ pub fn target_schema(target: &str) -> Result<Value> {
 }
 fn compact(mut data: Value, command: &str) -> Value {
     if command == "capabilities" {
-        return json!({"name":data["name"],"version":env!("CARGO_PKG_VERSION"),"status":data["status"],"processing":data["processing"],"tools":crate::tools::list()["tools"].as_array().unwrap().iter().map(|tool| &tool["name"]).collect::<Vec<_>>(),"workflow":["project_info","submit_edit_preview","job_status","render","cleanup_plan","finalize"],"schema_target":"command name, op:<type>, mask:<type>, edit:<type>","workfiles":"omit preview output for reusable managed path; temporary=true marks draft exports; finalize recycles registered work after explicit final-version selection","jobs":"use named submit tools; session-local; mutation idempotency keys retained for this session; cancellation never rolls back commits"});
+        return json!({"name":data["name"],"version":env!("CARGO_PKG_VERSION"),"status":data["status"],"processing":data["processing"],"tools":crate::tools::list()["tools"].as_array().unwrap().iter().map(|tool| &tool["name"]).collect::<Vec<_>>(),"workflow":["project_info","edit_preview","render"],"schema_target":"command name, op:<type>, mask:<type>, edit:<type>","workfiles":"omit preview output for reusable managed path; temporary=true marks draft exports; finalize recycles registered work after explicit final-version selection","jobs":"use named submit tools; session-local; mutation idempotency keys retained for this session; cancellation never rolls back commits"});
     }
     if let Some(analysis) = data.get_mut("analysis").and_then(Value::as_object_mut) {
         analysis.remove("histogram");
@@ -212,7 +212,7 @@ pub fn handle(session: &mut Session, message: Value, initialized: &mut bool) -> 
             *initialized = true;
             session.persistent = true;
             Ok(
-                json!({"protocolVersion":protocol,"capabilities":{"tools":{},"resources":{}},"serverInfo":{"name":"tinge","version":env!("CARGO_PKG_VERSION")},"instructions":"Use the individually exposed Tinge tools and their complete input schemas. Read project_info before revision-checked edits. submit_edit_preview queues only edit_preview; inspect job_status and committed revision even when preview fails or cancellation is requested. Jobs and retry keys are session-local; after reconnect read project state. Paths are local and not restricted to a workspace. Finalization recycles registered files only after the user selects the final revision and authorizes cleanup. CLI/JSONL generic requests are not callable through MCP."}),
+                json!({"protocolVersion":protocol,"capabilities":{"tools":{},"resources":{}},"serverInfo":{"name":"tinge","version":env!("CARGO_PKG_VERSION")},"instructions":"Use named tools and visible schemas. Read project_info initially; reuse the returned revision, re-read on conflict/reconnect. Ordinary edits: edit_preview; _inline_image:true when viewing pixels. Heavy work: submit tool then job_status. Before retrying check committed/revision/preview_error; cancellation never undoes commits. Jobs and retry keys are session-local. Paths are local and unrestricted. Finalize only a selected revision with authorized cleanup."}),
             )
         }
         "ping" => Ok(json!({})),
@@ -252,7 +252,7 @@ pub fn handle(session: &mut Session, message: Value, initialized: &mut bool) -> 
                     let data = if lean { compact(data, &command) } else { data };
                     let failed = crate::outcome::failed(&data);
                     let mut content = vec![
-                        json!({"type":"text","text":if lean { format!("Tinge {command}: {}", if failed { "failed; inspect structuredContent for committed changes and recovery details" } else { data.get("status").and_then(Value::as_str).unwrap_or("completed") }) } else { serde_json::to_string(&data)? }}),
+                        json!({"type":"text","text":format!("Tinge {command}: {}", if failed { "failed; inspect structuredContent for committed changes and recovery details" } else { data.get("status").and_then(Value::as_str).unwrap_or("completed") })}),
                     ];
                     for uri in crate::jobs::resource_uris(&data) {
                         if inline {

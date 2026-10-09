@@ -80,7 +80,7 @@ stats 分位/均值在 scene-linear sRGB 中测量，直方图在编码 sRGB 中
 
 JSON-RPC 2.0，一行一个消息，无 Content-Length 帧。stdout 仅协议，诊断/可选进度在 stderr。支持协议版本 2025-11-25、2025-06-18、2024-11-05 的共同工具与资源子集。尚未完成官方 SDK 客户端兼容矩阵，仅有真实进程协议测试。
 
-所有命名工具默认在 structuredContent 返回数据，text 给出短状态，图片使用 resource_link；`_inline_image:true` 可直接显示图片，`_response:"full"` 可取完整诊断。preview 的 include_analysis 默认为 false，与返回模式独立。这两个下划线字段仅属于 MCP 外层，不能嵌入 CLI/JSONL Request。同步与后台工具的 schema 都严格拒绝未知字段；同名工具只能执行自己的操作。
+所有命名工具在 structuredContent 返回数据，compact/full 的 text 均只给短状态，不重复输出 JSON，图片使用 resource_link；`_inline_image:true` 可直接显示图片，`_response:"full"` 可取完整诊断。preview 的 include_analysis 默认为 false，与返回模式独立。这两个下划线字段仅属于 MCP 外层，不能嵌入 CLI/JSONL Request。同步与后台工具的 schema 都严格拒绝未知字段；同名工具只能执行自己的操作。
 
 调用失败以 isError 返回（包括版本冲突、部分预览/清理失败和 failed 任务状态），协议方法/参数错误使用 JSON-RPC error。未知工具、command 注入、错误业务参数返回工具错误。preview 资源只枚举和读取当前服务会话生成的 URI，读取验证 hash；重启后需要重新生成。原图和任意路径不作为资源开放。MCP 资源 URI 的可用性不等于磁盘项目状态。
 
@@ -90,6 +90,9 @@ JSONL 返回 `ok:false` 并继续服务；MCP 返回 `isError:true`，简短文�
 必须检查 `committed`、`revision`、`preview_error`，不要因失败标志直接重做编辑。
 清理的 `failed` 文件列表或非空 `registry_error` 同样传播失败。
 仅有 `workfile_warning`（例如导出到项目目录之外）仍表示导出成功、有登记警告。
+
+project_info 默认 history_limit=0，仅返回当前摘要；历史按需分页（1..100）。
+MCP schema 保留所有类型、参数约束、默认值和引用，省略 number 的非标准 float/double format 注解。
 
 ## 缓存、进度和批量
 

@@ -3795,7 +3795,7 @@
           "type": "string"
         },
         "history_limit": {
-          "default": 10,
+          "default": 0,
           "format": "uint",
           "minimum": 0,
           "type": "integer"
