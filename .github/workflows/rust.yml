@@ -19,3 +19,18 @@ jobs:
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
       - run: cargo build --release --locked
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Agent protocol acceptance
+        shell: pwsh
+        run: |
+          $exe = if ($IsWindows) { 'target/release/vibecolor.exe' } else { 'target/release/vibecolor' }
+          python scripts/plugin-acceptance.py --executable $exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/agent-acceptance.py --executable $exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - run: node --test scripts/viewer-client.test.cjs

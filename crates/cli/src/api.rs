@@ -483,8 +483,9 @@ impl Session {
     }
     fn analysis(&mut self, frame: &Frame, p: &project::Project, revision: u64) -> Result<Value> {
         let key = format!(
-            "{}:{}",
+            "{}:{}:{}",
             p.source.hash,
+            serde_json::to_string(&p.source.color_space)?,
             p.get_revision(revision)?.recipe_hash
         );
         if let Some(data) = self.analyses.get(&key) {
@@ -521,6 +522,15 @@ impl Session {
         let uri = format!("vibecolor://preview/{hash}");
         self.previews.retain(|id, old| old != &path || id == &uri);
         self.previews.insert(uri.clone(), path);
+        while self.previews.len() > 64 {
+            let old = self
+                .previews
+                .keys()
+                .find(|key| *key != &uri)
+                .cloned()
+                .unwrap();
+            self.previews.remove(&old);
+        }
         Ok(uri)
     }
     pub fn run(&mut self, request: Request) -> Result<Value> {
@@ -1399,19 +1409,7 @@ impl Session {
                 for (i, job) in jobs.into_iter().enumerate() {
                     match self.run_depth(job, depth + 1) {
                         Ok(data) => {
-                            let failed = data
-                                .get("failures")
-                                .and_then(Value::as_u64)
-                                .is_some_and(|n| n > 0)
-                                || data.get("preview_error").is_some()
-                                || data.get("status").is_some_and(|status| status == "failed")
-                                || data
-                                    .get("failed")
-                                    .and_then(Value::as_array)
-                                    .is_some_and(|files| !files.is_empty())
-                                || data
-                                    .get("registry_error")
-                                    .is_some_and(|error| !error.is_null());
+                            let failed = crate::outcome::failed(&data);
                             if failed {
                                 failures += 1;
                             }

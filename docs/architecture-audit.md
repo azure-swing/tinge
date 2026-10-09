@@ -1,0 +1,117 @@
+# 架构与 Agent 友好性审计
+
+审计日期：2026-10-09。基线：`ab9b1ec8faca653bd440cfcf22cb5363cd52f8bc`，
+通过 GitHub 连接器确认与当时 `main` 一致。范围包括第一方 Rust 代码、CLI/JSONL/MCP、
+项目存储、任务与缓存、查看器入口、文档和验证流程；没有逐行审计 vendored C/C++。
+
+## 结论
+
+现有架构适合本地、单用户、非破坏性静态图片调色，值得继续演进。
+已有真正面向 Agent 的基础：独立命名工具、严格输入、可发现 schema、修订冲突、
+提交回执、后台任务、会话内幂等、可读取图片与可选诊断。
+但尚不足以声称完成可靠的长驻 Agent 服务或所有宿主的兼容验收。
+本次修复五类可验证问题，并补充开发入口和 CI；大型拆分与接口迁移留作后续。
+
+## 架构判断
+
+| 部分 | 判断与依据 |
+| --- | --- |
+| 处理层 | color/core/ocio/io/project/engine/cli 分工清楚；统一浮点工作域、DAG 验证和内容缓存有利于可重复执行。 |
+| 项目层 | OS 文件锁、expect_revision、冻结资产、原子写入与保留历史适合并发 Agent 编辑。取消不回滚提交的语义已明确。 |
+| 传输层 | CLI、JSONL 和 MCP 复用 Request/Session；tools.rs 集中声明工具和安全标注。此次将分散的部分失败判定收敛到 outcome.rs。 |
+| 可选 UI | loopback、Host/Origin/token 检查、独立预览任务与查看器生命周期管理有明确边界。未执行本次浏览器视觉验收。 |
+| 模块耦合 | core 的 Operation 直接引用 ocio::NodeGrade；engine 调用 project::compile_color_nodes。依赖无环，但领域模型和渲染编译仍与原生适配、存储层耦合。 |
+| 应用层 | 基线 api.rs 1517 行，同时承载 DTO、会话、调度、文件保护及工作流；CLI 既是入口也是应用服务。继续增加功能会放大变更面。 |
+
+建议保留当前 crate 结构，下一阶段先按项目、渲染、任务、存储拆分 api.rs 内部模块，
+保持外部 Request/schema 不变；有第二个宿主或 SDK 需求时再提取应用服务 crate。
+把纯色彩参数类型与原生 OCIO 执行分开、将颜色节点编译移出项目存储层，
+应作为独立迁移验证。暂不需要微服务化、通用插件容器或重写引擎。
+
+## 本次已修复
+
+优先级表示对正确性/Agent 使用的影响，不是漏洞等级。
+
+| 优先级 | 问题与触发条件 | 修复与回归 |
+| --- | --- | --- |
+| P1 | 同一会话分析同一源文件、同一配方但不同 input_space 的两个项目，统计缓存 key 缺少 source.color_space，第二个项目可能收到第一个的统计。 | key 增加源图色彩解释；用 sRGB/linear 两个项目与独立新会话结果交叉验证。 |
+| P1 | edit_preview 已提交、后续预览失败时，CLI/JSONL 仅检查 failures 数量，仍可能输出 ok:true；MCP 的短文字也可能显示 completed。清理的部分失败同样存在传输分歧。 | outcome::failed 统一 CLI、JSONL、MCP、batch 和 worker 判断；保留 committed/revision 回执，CLI 返回 1。真实子进程回归覆盖无法写入预览后的已提交状态。 |
+| P2 | `_response:full` 且省略 `_inline_image` 会自动返回图片，与独立开关契约不符，增加无意的像素传输。 | 图片仅显式 true 时内联；验证缺省、false、true 三种组合。 |
+| P2 | compact analyze 的 histogram 在结果根部，原压缩逻辑仅处理 analysis.histogram，直接及后台分析均漏删。 | 保留均值等关键统计，compact 省略直方图，full 保留；覆盖直接和后台调用。 |
+| P2 | 同步预览往 Session.previews 不断插入新 URI，只有后台 job_status 限制索引大小；长期同步调用可无限增加索引与资源枚举。 | 同步路径同样限制 64 项并保留本次返回 URI；66 个不同预览验证边界和资源读取。文件保留不受索引淘汰影响。 |
+
+另新增根目录 AGENTS.md，说明代码位置、不可破坏的语义及检查方式。
+CI 增加现有真实 MCP 契约/工作流与查看器 JavaScript 测试，覆盖 Windows/Linux。
+Python 与 Node 仍只是开发验证依赖，运行插件只需要原生程序。
+
+兼容性：请求字段、MCP 工具名、项目格式和像素算法均未迁移。
+调用端应适应更准确的失败标志，以及 full 模式不再隐式内联图片。
+仅含 workfile_warning 的成功导出仍是成功；警告不等于失败。
+
+## 后续优先级
+
+### P2：接口体积与真实工具选择
+
+基线 tools/list 的 tools 数组经紧凑 JSON 序列化为 **357,231 UTF-8 字节**，
+共 **49** 个工具；最大的 submit_edit_preview 定义为 32,812 字节。
+这是协议字节数，不是 token 数，也不能直接推断所有宿主都会完整注入模型上下文。
+多个工具重复携带 Operation/Mask/Recipe 定义，增加发现和上下文成本。
+
+优先收集目标宿主的工具选择 traces，量化发现时间、上下文占用、一次调用成功率与
+重试次数。再考虑显式的启动时工具集（常用调色/高级交换）或独立高级服务；
+每个暴露工具仍须提供完整静态 schema，不回退到隐藏通用执行器。
+tests/plugin-prompts.json 的 18 组案例目前只有结构检查；没有模型 traces 就不能
+将 selection_evaluation 标记为已通过。
+
+### P2：错误和结果的强类型契约
+
+api::error_json 除 RevisionConflict 与 JobError 外多数归为 operation_failed；
+调用端仍要读消息区分不存在、无权限、参数错误和不支持的格式。
+MCP 成功结果为动态 Value，未声明 outputSchema，失败详情主要在 text 中。
+下一步建立应用层错误枚举与结果 DTO，提供稳定 code/retryable/action 信息，
+并为输出增加契约测试。避免依据错误英文文本做分类。
+
+### P2：长驻服务与资源边界
+
+协议 input_channel 使用 BufRead::lines，队列虽然有界，单行请求字节数没有入口上限；
+job_submit 的 1 MiB 检查发生在读取/解析之后。建议采用有界行读取，超限后明确报错，
+并测试下一条合法请求的恢复。图片传输也应先检查长度/有界读取再分配完整缓冲。
+
+同步重型工具会阻塞协议线程；后台单 worker 和 8 项队列适合本地串行工作，
+重启恢复、取消检查点覆盖和任务状态持久化尚未完成。增加多 worker 前，先测峰值内存
+与同项目竞争，不应仅将 worker 数量乘以 CPU 核数。
+
+缓存预算是保留像素的预算，并非进程内存上限；24MP RGBA float32 单帧约 366 MiB，
+渲染中间结果、RAW 解码与预览编码会额外占用内存。建议固定真实相机样本测量
+冷/热预览延迟、峰值 RSS、取消耗时，再决定 tile/分辨率代理等引擎改造。
+
+### P2：历史增长与存储边界
+
+project_info 虽然分页返回，project::load 仍读取并验证全部历史；提交还会重写完整 JSON。
+因此分页降低响应大小，不会把读取成本变成与历史长度无关。
+先测量 100/1000/10000 修订的加载与提交耗时；达到产品阈值后再考虑快照+日志或
+独立不可变 revision 文件，并保留搬迁、校验、原子性和迁移工具。
+
+### P3：协议兼容、构建与交付
+
+手写 MCP 握手声明多个协议版本，但本次没有官方 SDK/目标宿主兼容矩阵验证。
+建立真实客户端矩阵后，才决定收窄协商版本或采用 SDK。
+继续保留 Cargo.lock、vendored 补丁说明和独立色彩参考向量；增加干净机器构建、
+依赖/许可证扫描和发布产物校验。现有 CMake 构建可选择系统依赖，不能称为完全隔离构建。
+
+## 验证记录与边界
+
+本机为 Windows/MSVC。修改前工作区测试通过；修改后全量 Rust 回归和
+`cargo clippy --workspace --all-targets --locked -- -D warnings` 通过，
+查看器脚本 2 项测试通过。新增 6 项回归测试，覆盖上述五类问题和跨传输失败语义。
+受限执行环境最初在原子文件写入时报 os error 5；同一测试在正常本机权限下通过，
+因此没有将该环境限制记为产品缺陷。
+
+debug 与新 release 二进制的 plugin-acceptance、agent-acceptance 均通过，覆盖
+49 项工具契约、幂等淘汰回执、图片资源、查看器复用/关闭。
+`cargo build --release --locked` 已产生新的 `target/release/deps/vibecolor.exe`，
+但替换 `target/release/vibecolor.exe` 时返回拒绝访问；本次将新链接产物复制到
+忽略目录 `artifacts/vibecolor-audit.exe` 执行 release 验收，没有替换或关闭现有服务。
+该构建命令本身未完整成功，不将其记录为干净构建通过。
+Linux CI、实际模型选择、
+宿主看图兼容性、真实 RAW 相机语料、视觉调色质量和内存压力基准不在本次已完成验收范围。

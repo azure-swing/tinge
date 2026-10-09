@@ -133,6 +133,8 @@ RAW 可使用版本化的传感器电平、相机 WB/xy、曝光、裁切方向�
 
 ## 验证
 
+架构与 Agent 接口的审计、已修复问题和后续优先级见 [架构审计](docs/architecture-audit.md)。开发入口与必须保持的约束见 [AGENTS.md](AGENTS.md)。
+
 ASC CDL 文件可通过 `cdl-inspect`、`cdl-import`、`cdl-export` 交换。导入要求指定处理空间和风格，返回可直接用于 apply 的 ocio_grade op；SOP/饱和度与来源描述存进项目。导出所选节点的参数，并报告文件未表达的处理链上下文。详见 [CDL 工作流](docs/cdl-workflow.md)。
 
 LUT 可检查纯 1D/3D 或组合 shaper，选择 trilinear/tetrahedral。纯颜色配方与项目修订可烘焙为独立 3D `.cube`，返回编码与采样误差；空间效果明确拒绝。用法见 [LUT 工作流](docs/lut-workflow.md)。

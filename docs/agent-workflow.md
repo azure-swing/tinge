@@ -34,10 +34,15 @@ queued/running 后根据进度查询，避免紧密轮询；终态为 completed/
 需要像素时使用 resources/read 或 `_inline_image:true`；完整诊断使用 `_response:"full"`。
 这两个字段仅属于 MCP 外层。preview 的 include_analysis 默认为 false，
 完整模式也不会自动启用分析；统计可单独调用 vibecolor_stats。
+`_response:"full"` 也不会自动内联图片；传输像素须显式 `_inline_image:true`。
+compact 模式对直接 analyze 和后台 analyze 结果同样省略 histogram。
 相同源/配方的统计最多缓存 8 项。
+统计缓存同时区分源图的 input_space，避免同一文件的不同色彩解释串用结果。
 
 预览先按全分辨率执行配方再缩小，空间算子参数不因预览尺寸改变。
 图片 URI 读取会验证文件 hash，传输上限为 32 MiB；不会把旧 URI 悄悄指向新像素。
+同步与后台预览共享的会话资源索引最多 64 项；旧 URI 可能淘汰，重新生成预览
+可恢复引用。索引淘汰不会删除文件，也不是磁盘清理操作。
 preview/compare/edit_preview 可省略 output，使用已登记的项目工作路径。
 preview/compare 的稳定缓存文件可能被替换，所以不是只读操作。
 显式输出默认拒绝覆盖，只有 overwrite:true 才允许，并继续保护源图、项目和资产。

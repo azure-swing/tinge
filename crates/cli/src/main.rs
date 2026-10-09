@@ -2,6 +2,7 @@
 mod agent_tests;
 mod api;
 mod jobs;
+mod outcome;
 mod protocol;
 mod tools;
 mod viewers;
@@ -696,10 +697,7 @@ fn main() {
     };
     match result {
         Ok(Some(data)) => {
-            let failed = data
-                .get("failures")
-                .and_then(Value::as_u64)
-                .is_some_and(|n| n > 0);
+            let failed = outcome::failed(&data);
             println!("{}", json!({"ok":!failed,"data":data}));
             if failed {
                 std::process::exit(1);
