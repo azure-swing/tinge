@@ -315,33 +315,6 @@ pub const BACKGROUND: &[&str] = &[
     "finalize",
 ];
 
-// Float/double are nonstandard format annotations, not JSON Schema bounds.
-// Keep the number type, actual bounds, defaults and all literal values intact.
-fn slim_numeric_annotations(value: &mut Value) {
-    match value {
-        Value::Object(map) => {
-            if map.get("type").is_some_and(|v| v == "number")
-                && map
-                    .get("format")
-                    .is_some_and(|v| v == "float" || v == "double")
-            {
-                map.remove("format");
-            }
-            for (key, child) in map {
-                if !matches!(key.as_str(), "default" | "const" | "enum" | "examples") {
-                    slim_numeric_annotations(child);
-                }
-            }
-        }
-        Value::Array(values) => {
-            for child in values {
-                slim_numeric_annotations(child);
-            }
-        }
-        _ => {}
-    }
-}
-
 fn descriptor(tool: &Tool, background: bool) -> Value {
     let mut schema = protocol::target_schema(tool.command).expect("reviewed command schema");
     let properties = schema["properties"].as_object_mut().unwrap();
@@ -405,7 +378,7 @@ fn descriptor(tool: &Tool, background: bool) -> Value {
         .as_array_mut()
         .unwrap()
         .retain(|v| v != "command");
-    slim_numeric_annotations(&mut schema);
+    crate::schema_compact::compact(&mut schema);
     let description = if background {
         format!(
             "Queue this operation; returns job ID for job_status. Retry keys are session-only; after restart inspect state. Queuing changes session state. {}",
@@ -502,6 +475,8 @@ mod tests {
     #[test]
     fn public_surface_has_complete_schemas_annotations_and_no_dispatcher() {
         let tools = list()["tools"].as_array().unwrap();
+        // Bound the actual advertised payload, including transitive definitions.
+        assert!(serde_json::to_vec(tools).unwrap().len() < 285_000);
         let names: BTreeSet<_> = tools.iter().map(|t| t["name"].as_str().unwrap()).collect();
         assert_eq!(names.len(), tools.len());
         let commands: BTreeSet<_> = protocol::command_names().into_iter().collect();

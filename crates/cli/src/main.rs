@@ -4,6 +4,7 @@ mod api;
 mod jobs;
 mod outcome;
 mod protocol;
+mod schema_compact;
 mod tools;
 mod viewers;
 mod web;

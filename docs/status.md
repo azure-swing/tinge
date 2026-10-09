@@ -1,5 +1,9 @@
 # 当前交接状态
 
+2026-10-09 / 工具参数结构进一步精简：49 个工具合计从 331,551 降到 278,924 UTF-8 字节（-15.87%）；按 `o200k_base` 对紧凑 JSON 分词，从 83,309 降到 68,329 tokens（-17.98%）。基础流程的 init/project_info/preview/edit_preview/render 从 10,486 降到 8,601；edit_preview 从 7,703 降到 6,151。合并的是 schema 内部重复结构，工具、参数和运行行为保留；所有引用仍可在单个工具内解析。参考分词不等于实际模型 tokenizer 或宿主上下文占用。
+
+新增参数压缩回归，覆盖递归引用、引用旁的额外约束、重叠 oneOf 分支、数组长度和默认值/描述保护，并给完整目录设置体积回归上限。Rustfmt、Clippy、完整 workspace、正式 release、MCP/Agent 及查看器验收通过。额外使用 JSON Schema Draft 2020-12 校验器对比旧/新定义，13,662 次合法输入及 103,637 次非法输入检查结果一致，覆盖全部 49 个工具；这是样例验证，不代表真实宿主工具选择验收。记录见 `artifacts/schema-compaction-validation.json`。
+
 2026-10-09 / Agent 上下文精简：49 个工具和参数约束保留，省略 MCP number 的非标准 float/double format 注解并缩短重复说明；工具定义数组从 356,998 降至 331,551 UTF-8 字节，减少 7.13%。Skill 正文及元数据按统一换行计减少 35.46%。project_info 默认不返回历史（history_limit=0），显式分页保持可用；full 结果只在 structuredContent 返回一次，text 仅短状态。普通迭代使用 edit_preview 并按需内联图片，复用成功回执的修订，减少重复读取和轮询。
 
 Rustfmt、Clippy、完整 workspace 回归、正式 release 与 Skill 格式检查通过；真实进程回归覆盖完整统计不重复及默认历史为空。约束/安全标注等价检查和单次编辑带图验收见 `artifacts/context-acceptance.json`。这仅量化协议/文件字节和实际调用结果，不代表 token、宿主上下文注入量或真实模型工具选择已测定。

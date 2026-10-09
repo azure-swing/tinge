@@ -6,6 +6,8 @@
 
 CLI `run`、JSONL `serve` 继续使用带 `command` 的 `Request` 枚举。MCP 改为独立 `tinge_<操作>` 工具，参数不含 command；`tools/list` 为每项操作直接给出完整 schema、描述和 readOnlyHint/destructiveHint/openWorldHint。后台操作使用 `tinge_submit_<操作>`，参数与同步操作相同并增加可选 idempotency_key。通用 MCP 执行器、batch、job_submit 不再接受。以下带 command 的示例均为 CLI/JSONL 格式；MCP 使用对应工具并去掉 command。`tinge_schema` 只用于补充查看配方/算子结构，不是执行前提。
 
+MCP schema 在发布时合并重复的定长数字数组、提取联合分支的公共类型、合并仅标签不同的同形分支，并内联体积更小的类型引用。参数名称、必填项、默认值、范围、数组长度、未知字段拒绝及递归蒙版保持不变；每个工具的 `$ref` 均在自己的 schema 内解析，不依赖先加载其他工具。CLI `schema` 保留原始派生结构。`tools/list` 仍返回完整目录，模型按需加载由客户端负责。
+
 ```json
 {"command":"capabilities"}
 {"command":"schema","target":"edit_preview"}
