@@ -80,6 +80,147 @@ fn await_job(session: &mut Session, id: u64) -> Value {
 }
 
 #[test]
+fn basic_adjustment_merges_controls_preserves_downstream_and_rechecks_revision() {
+    let (_dir, path) = project();
+    let mut session = Session::default();
+    let result = call(
+        &mut session,
+        json!({"command":"adjust","project":path,"expect_revision":0,
+        "exposure":0.4,"contrast":1.1,"saturation":1.2,"vibrance":0.2,
+        "white_balance":[1.1,1,0.9],"shadows":0.1,"highlights":-0.1,"whites":0.2,"blacks":-0.2}),
+        false,
+    );
+    assert_eq!(result["isError"], false, "{result}");
+    assert_eq!(result["structuredContent"]["revision"], 1);
+    assert!(
+        result["content"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|c| c["type"] == "image")
+    );
+    let saved = tinge_project::load(&path).unwrap();
+    let before = serde_json::to_value(&saved.head().unwrap().recipe).unwrap();
+    assert_eq!(before["nodes"].as_array().unwrap().len(), 3);
+    assert_eq!(
+        before["nodes"][0]["op"]["gains"],
+        json!([1.1_f32, 1.0_f32, 0.9_f32])
+    );
+    assert_eq!(before["nodes"][1]["op"]["exposure"], json!(0.4_f32));
+    assert_eq!(before["nodes"][2]["op"]["blacks"], json!(-0.2_f32));
+    session.run(request(json!({"command":"apply","project":path,"expect_revision":1,"edits":[
+        {"type":"upsert_node","node":{"id":"downstream","inputs":["__tinge_basic_tone"],"op":{"type":"exposure","stops":0.1}}},
+        {"type":"set_output","id":"downstream"}]}))).unwrap();
+    let update = json!({"command":"adjust","project":path,"expect_revision":2,"saturation":0.8,"exposure":null});
+    session.run(request(update.clone())).unwrap();
+    let saved = tinge_project::load(&path).unwrap();
+    let after = serde_json::to_value(&saved.head().unwrap().recipe).unwrap();
+    assert_eq!(saved.revision, 3);
+    assert_eq!(after["nodes"].as_array().unwrap().len(), 4);
+    assert_eq!(after["output"], "downstream");
+    let mut expected = before;
+    expected["nodes"][1]["op"]["saturation"] = json!(0.8_f32);
+    for i in 0..3 {
+        assert_eq!(after["nodes"][i], expected["nodes"][i]);
+    }
+    assert!(session.run(request(update)).is_err());
+    let prepared: crate::adjust::Adjust =
+        serde_json::from_value(json!({"project":path,"expect_revision":3,"exposure":0.6})).unwrap();
+    let prepared = prepared.prepare().unwrap();
+    session.run(request(json!({"command":"adjust","project":path,"expect_revision":3,"adjustment_id":"second","contrast":1.1}))).unwrap();
+    let error = session.run(prepared).unwrap_err();
+    assert!(
+        error
+            .downcast_ref::<tinge_project::RevisionConflict>()
+            .is_some()
+    );
+    assert_eq!(tinge_project::load(&path).unwrap().revision, 4);
+    assert_eq!(
+        tinge_project::load(&path)
+            .unwrap()
+            .head()
+            .unwrap()
+            .recipe
+            .nodes
+            .len(),
+        7
+    );
+}
+
+#[test]
+fn basic_adjustment_rejects_invalid_controls_and_bypassed_groups_without_commit() {
+    let (_dir, path) = project();
+    let mut session = Session::default();
+    for extra in [
+        json!({}),
+        json!({"exposure":null}),
+        json!({"exposure":25}),
+        json!({"contrast":-1}),
+        json!({"white_balance":[0,1,1]}),
+        json!({"white_balance":[1,1]}),
+        json!({"exposure":0,"typo":1}),
+        json!({"exposure":0,"adjustment_id":"a/b"}),
+        json!({"exposure":0,"max_edge":0}),
+    ] {
+        let mut body = json!({"command":"adjust","project":path,"expect_revision":0});
+        body.as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        assert_eq!(call(&mut session, body, true)["isError"], true);
+        assert_eq!(tinge_project::load(&path).unwrap().revision, 0);
+    }
+    session
+        .run(request(
+            json!({"command":"adjust","project":path,"expect_revision":0,"exposure":0.1}),
+        ))
+        .unwrap();
+    session.run(request(json!({"command":"apply","project":path,"expect_revision":1,"edits":[{"type":"set_output","id":"source"}]}))).unwrap();
+    assert!(
+        session
+            .run(request(
+                json!({"command":"adjust","project":path,"expect_revision":2,"exposure":0.2})
+            ))
+            .is_err()
+    );
+    assert_eq!(tinge_project::load(&path).unwrap().revision, 2);
+}
+
+#[test]
+fn basic_adjustment_keeps_commit_receipt_on_cancel_and_background_retries() {
+    let (_dir, path) = project();
+    let mut session = Session::default();
+    let cancel = session.cancel.clone();
+    session.observer = Some(Arc::new(move |event| {
+        if event["committed"] == true {
+            cancel.store(true, Ordering::Relaxed);
+        }
+    }));
+    let response = call(
+        &mut session,
+        json!({"command":"adjust","project":path,"expect_revision":0,"exposure":0.2}),
+        true,
+    );
+    assert_eq!(response["isError"], true);
+    assert_eq!(response["structuredContent"]["committed"], true);
+    assert_eq!(response["structuredContent"]["revision"], 1);
+    assert!(response["structuredContent"]["preview_error"].is_object());
+    let mut session = Session {
+        persistent: true,
+        ..Default::default()
+    };
+    let body = json!({"command":"job_submit","idempotency_key":"basic-once","request":{"command":"adjust","project":path,"expect_revision":1,"exposure":0.3}});
+    let first = call(&mut session, body.clone(), true);
+    assert_eq!(first["isError"], false, "{first}");
+    let job = first["structuredContent"]["job"].as_u64().unwrap();
+    let complete = await_job(&mut session, job);
+    assert_eq!(complete["status"], "completed", "{complete}");
+    let replay = call(&mut session, body, true);
+    assert_eq!(replay["structuredContent"]["job"], job);
+    assert_eq!(replay["structuredContent"]["reused"], true);
+    assert_eq!(tinge_project::load(&path).unwrap().revision, 2);
+}
+
+#[test]
 fn discovery_exposes_static_schemas_with_transitive_definitions() {
     let mut session = Session::default();
     let tools = protocol::handle(

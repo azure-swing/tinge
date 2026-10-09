@@ -196,6 +196,7 @@ impl Jobs {
             matches!(
                 request,
                 Request::Preview { .. }
+                    | Request::Adjust(_)
                     | Request::Render { .. }
                     | Request::EditPreview { .. }
                     | Request::Stats { .. }
@@ -204,7 +205,7 @@ impl Jobs {
                     | Request::Grade { .. }
                     | Request::Finalize { .. }
             ),
-            "job_submit accepts preview/render/edit_preview/stats/analyze/compare/grade/finalize; nested jobs and service controls are rejected"
+            "job_submit accepts adjust/preview/render/edit_preview/stats/analyze/compare/grade/finalize; nested jobs and service controls are rejected"
         );
         if let Some(key) = &key {
             ensure!(

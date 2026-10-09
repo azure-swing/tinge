@@ -49,6 +49,7 @@ pub enum CdlExportSource {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "command", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
+    Adjust(crate::adjust::Adjust),
     Selections {
         project: PathBuf,
     },
@@ -1022,6 +1023,7 @@ impl Session {
                 revision,
                 role,
             } => crate::workfiles::register(&project, &file, revision, role),
+            Request::Adjust(options) => self.run_depth(options.prepare()?, depth + 1),
             Request::EditPreview {
                 project,
                 expect_revision,

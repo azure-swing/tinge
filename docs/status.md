@@ -1,5 +1,11 @@
 # 当前交接状态
 
+2026-10-09 / 基础调色按需上下文：新增 adjust/submit_adjust，目录共 51 个工具。基础工具一次接收曝光、对比度、饱和度、自然饱和度、白平衡及明暗，使用一个事务并返回一次预览。复用 adjustment_id 更新三节点组，省略/null 保留值，保留下游节点；不完整、冲突、旁路组拒绝更新。复用原有原子提交、修订锁、部分失败回执和后台幂等机制。普通工作流仅读取修订，高级图/蒙版才读取配方并使用 edit_preview。
+
+按 o200k_base 对紧凑 JSON 测量：adjust 684 tokens，edit_preview 6,151；同样五工具改用 adjust 从 8,601 降至 3,134（-63.56%），基础三工具 1,393。完整目录增加至 284,807 字节 / 69,765 tokens；此优化依赖客户端按需加载，服务端不控制宿主注入行为，也不代表单图账单。记录见 `artifacts/basic-context-measurement.json`。
+
+Rustfmt、Clippy、完整 workspace、正式 release、真实 MCP 基础调色/修订冲突与 Agent 验收通过；新增回归覆盖参数保留、下游图、锁内二次修订检查、提交后取消及后台幂等。基础同步/后台 schema 经 Draft 2020-12 合法/非法样例检查。提示用例更新为 19 项；真实模型选择验收未执行。
+
 2026-10-09 / 工具参数结构进一步精简：49 个工具合计从 331,551 降到 278,924 UTF-8 字节（-15.87%）；按 `o200k_base` 对紧凑 JSON 分词，从 83,309 降到 68,329 tokens（-17.98%）。基础流程的 init/project_info/preview/edit_preview/render 从 10,486 降到 8,601；edit_preview 从 7,703 降到 6,151。合并的是 schema 内部重复结构，工具、参数和运行行为保留；所有引用仍可在单个工具内解析。参考分词不等于实际模型 tokenizer 或宿主上下文占用。
 
 新增参数压缩回归，覆盖递归引用、引用旁的额外约束、重叠 oneOf 分支、数组长度和默认值/描述保护，并给完整目录设置体积回归上限。Rustfmt、Clippy、完整 workspace、正式 release、MCP/Agent 及查看器验收通过。额外使用 JSON Schema Draft 2020-12 校验器对比旧/新定义，13,662 次合法输入及 103,637 次非法输入检查结果一致，覆盖全部 49 个工具；这是样例验证，不代表真实宿主工具选择验收。记录见 `artifacts/schema-compaction-validation.json`。

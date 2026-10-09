@@ -6,6 +6,7 @@ Trace JSON is a list of {id, calls:[{name, arguments}]} records.
 """
 import argparse
 import json
+import tempfile
 from pathlib import Path
 
 import importlib.util
@@ -55,12 +56,34 @@ def main():
             assert name not in tools
             response = client.rpc('tools/call', {'name': name, 'arguments': {'command': 'capabilities'}})
             assert response['isError'], response
+        basic = tools['tinge_adjust']
+        basic_bytes = len(json.dumps(basic, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+        assert basic_bytes < 5000 and '$defs' not in basic['inputSchema']
+        assert 'edits' not in basic['inputSchema']['properties']
+        with tempfile.TemporaryDirectory(prefix='tinge-basic-') as directory:
+            root = Path(directory)
+            source, project = root / 'source.png', root / 'basic.tinge'
+            agent.png(source)
+            client.data({'command': 'init', 'input': str(source), 'project': str(project)})
+            body = {'command': 'adjust', 'project': str(project), 'expect_revision': 0,
+                    'exposure': 0.3, 'contrast': 1.1, 'saturation': 1.2,
+                    'white_balance': [1.1, 1, 0.9], 'highlights': -0.1}
+            first = client.call(body, full=True)
+            assert first['structuredContent']['revision'] == 1
+            assert sum(item['type'] == 'image' for item in first['content']) == 1
+            client.data({'command': 'adjust', 'project': str(project), 'expect_revision': 1,
+                         'saturation': 0.8, 'exposure': None})
+            saved = client.data({'command': 'project_info', 'project': str(project), 'include_recipe': True})
+            assert saved['revision'] == 2 and len(saved['recipe']['nodes']) == 3
+            assert abs(saved['recipe']['nodes'][1]['op']['exposure'] - 0.3) < 1e-6
+            assert abs(saved['recipe']['nodes'][1]['op']['saturation'] - 0.8) < 1e-6
+            assert client.call(body, allow_error=True)['isError']
         response = client.rpc('tools/call', {'name': 'tinge_capabilities', 'arguments': {'command': 'finalize'}})
         assert response['isError'], response
         fixtures = json.loads((Path(__file__).resolve().parents[1] / 'tests/plugin-prompts.json').read_text(encoding='utf-8'))['cases']
         for case in fixtures:
             assert all(name in tools for name in case['expected_tools'] + case.get('forbidden_tools', [])), case['id']
-        report = {'tool_definition_bytes': len(json.dumps(catalog, ensure_ascii=False, separators=(',', ':')).encode('utf-8')), 'named_tools': len(tools), 'contract': 'passed', 'prompt_cases': len(fixtures), 'selection_evaluation': 'not_run'}
+        report = {'tool_definition_bytes': len(json.dumps(catalog, ensure_ascii=False, separators=(',', ':')).encode('utf-8')), 'basic_tool_definition_bytes': basic_bytes, 'basic_adjustment_process': 'passed', 'named_tools': len(tools), 'contract': 'passed', 'prompt_cases': len(fixtures), 'selection_evaluation': 'not_run'}
         if args.package:
             root = args.package.resolve()
             manifest = json.loads((root / '.codex-plugin/plugin.json').read_text(encoding='utf-8'))

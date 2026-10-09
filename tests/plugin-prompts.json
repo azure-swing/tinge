@@ -6,21 +6,21 @@
       "prompt": "用 Tinge 调整 C:/photos/portrait.tinge 的曝光并给我看预览。",
       "expected_tools": [
         "tinge_project_info",
-        "tinge_edit_preview",
-        "tinge_submit_edit_preview"
+        "tinge_adjust",
+        "tinge_submit_adjust"
       ],
       "forbidden_tools": [
         "tinge_finalize",
         "tinge_submit_finalize"
       ],
-      "expectation": "Read current revision and recipe, submit revision-checked edits, inspect actual preview pixels.",
+      "expectation": "Read current revision without recipe, combine basic controls in one adjust, reuse adjustment_id and inspect preview; no cleanup.",
       "required_any_groups": [
         [
           "tinge_project_info"
         ],
         [
-          "tinge_edit_preview",
-          "tinge_submit_edit_preview"
+          "tinge_adjust",
+          "tinge_submit_adjust"
         ]
       ]
     },
@@ -30,22 +30,46 @@
       "prompt": "C:/photos/portrait.tinge 这张人像太暗了，提亮一点，保留修改历史。",
       "expected_tools": [
         "tinge_project_info",
-        "tinge_edit_preview",
-        "tinge_submit_edit_preview"
+        "tinge_adjust",
+        "tinge_submit_adjust"
       ],
       "forbidden_tools": [
         "tinge_finalize"
       ],
-      "expectation": "Revisioned edits and preview, no cleanup.",
+      "expectation": "Read current revision without recipe, combine basic controls in one adjust, reuse adjustment_id and inspect preview; no cleanup.",
       "required_any_groups": [
         [
           "tinge_project_info"
         ],
         [
-          "tinge_edit_preview",
-          "tinge_submit_edit_preview"
+          "tinge_adjust",
+          "tinge_submit_adjust"
         ]
       ]
+    },
+    {
+      "id": "combined-basic-controls",
+      "kind": "direct",
+      "prompt": "用 Tinge 把 C:/photos/portrait.tinge 曝光设为 +0.3、对比度 1.1、饱和度 1.05，并压一点高光，一次调整后给我看图。",
+      "expected_tools": [
+        "tinge_project_info",
+        "tinge_adjust",
+        "tinge_submit_adjust"
+      ],
+      "required_any_groups": [
+        [
+          "tinge_project_info"
+        ],
+        [
+          "tinge_adjust",
+          "tinge_submit_adjust"
+        ]
+      ],
+      "forbidden_tools": [
+        "tinge_finalize",
+        "tinge_submit_finalize"
+      ],
+      "expectation": "One combined basic adjustment after observing revision; absolute controls, inline preview, omit full recipe."
     },
     {
       "id": "read-project",

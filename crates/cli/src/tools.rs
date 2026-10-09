@@ -16,6 +16,13 @@ struct Tool {
 // a workspace allowlist. Session-only controls are bounded, hence closed-world.
 const TOOLS: &[Tool] = &[
     Tool {
+        command: "adjust",
+        description: "Basic photo grading in one commit and preview: exposure, contrast, saturation, vibrance, white balance and tones. Supply at least one non-null control. Absolute values; omitted/null controls stay unchanged. New adjustment_id appends a WB/primary/tone group; reuse it to update without stacking, keeping downstream edits. Requires observed revision. Preview failure may follow a commit: inspect committed/revision before retrying. Advanced graphs/masks use edit_preview.",
+        read_only: false,
+        destructive: true,
+        open_world: true,
+    },
+    Tool {
         command: "capabilities",
         description: "Get implemented image-processing capabilities and limitations. Does not change files or start work.",
         read_only: true,
@@ -305,6 +312,7 @@ const TOOLS: &[Tool] = &[
 ];
 
 pub const BACKGROUND: &[&str] = &[
+    "adjust",
     "edit_preview",
     "preview",
     "compare",
@@ -378,6 +386,29 @@ fn descriptor(tool: &Tool, background: bool) -> Value {
         .as_array_mut()
         .unwrap()
         .retain(|v| v != "command");
+    if tool.command == "adjust" {
+        let fields = schema["properties"].as_object_mut().unwrap();
+        fields.get_mut("adjustment_id").unwrap()["minLength"] = json!(1);
+        fields.get_mut("adjustment_id").unwrap()["maxLength"] = json!(64);
+        fields.get_mut("adjustment_id").unwrap()["pattern"] = json!("^[A-Za-z0-9_-]+$");
+        fields.get_mut("white_balance").unwrap()["items"]["minimum"] = json!(0.001);
+        fields.get_mut("white_balance").unwrap()["items"]["maximum"] = json!(100);
+        let null_controls: serde_json::Map<_, _> = [
+            "exposure",
+            "contrast",
+            "saturation",
+            "vibrance",
+            "white_balance",
+            "shadows",
+            "highlights",
+            "whites",
+            "blacks",
+        ]
+        .into_iter()
+        .map(|name| (name.to_owned(), json!({"type":"null"})))
+        .collect();
+        schema["not"] = json!({"properties":null_controls});
+    }
     crate::schema_compact::compact(&mut schema);
     let description = if background {
         format!(
@@ -476,7 +507,10 @@ mod tests {
     fn public_surface_has_complete_schemas_annotations_and_no_dispatcher() {
         let tools = list()["tools"].as_array().unwrap();
         // Bound the actual advertised payload, including transitive definitions.
-        assert!(serde_json::to_vec(tools).unwrap().len() < 285_000);
+        assert!(serde_json::to_vec(tools).unwrap().len() < 290_000);
+        let basic = tools.iter().find(|t| t["name"] == "tinge_adjust").unwrap();
+        assert!(serde_json::to_vec(basic).unwrap().len() < 5_000);
+        assert!(basic["inputSchema"].get("$defs").is_none());
         let names: BTreeSet<_> = tools.iter().map(|t| t["name"].as_str().unwrap()).collect();
         assert_eq!(names.len(), tools.len());
         let commands: BTreeSet<_> = protocol::command_names().into_iter().collect();

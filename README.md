@@ -70,11 +70,11 @@ $vc = '.\target\release\tinge.exe'
 
 ## Agent 协议
 
-MCP 提供 49 个独立命名工具：`tinge_project_info`、`tinge_edit_preview`、`tinge_submit_edit_preview`、`tinge_selections`、`tinge_selection_save`、`tinge_render`、`tinge_cleanup_plan`、`tinge_finalize` 等。每个工具包含完整静态参数契约和显式安全标注，参数不含 `command`；通用请求和 batch 仅供 CLI/JSONL 使用。图片默认返回资源引用，统计显式请求；后台任务支持会话内幂等重试。`_response:"full"` 控制诊断详情，`_inline_image:true` 控制内联图片，`include_analysis` 控制可选分析，三者独立。见 [Agent 工作流](docs/agent-workflow.md)。
+MCP 提供 51 个独立命名工具：`tinge_adjust`、`tinge_submit_adjust`、`tinge_project_info`、`tinge_edit_preview`、`tinge_submit_edit_preview`、`tinge_selections`、`tinge_selection_save`、`tinge_render`、`tinge_cleanup_plan`、`tinge_finalize` 等。每个工具包含完整静态参数契约和显式安全标注，参数不含 `command`；通用请求和 batch 仅供 CLI/JSONL 使用。图片默认返回资源引用，统计显式请求；后台任务支持会话内幂等重试。`_response:"full"` 控制诊断详情，`_inline_image:true` 控制内联图片，`include_analysis` 控制可选分析，三者独立。见 [Agent 工作流](docs/agent-workflow.md)。
 
-常规调色只需首次读取 `tinge_project_info` → `tinge_edit_preview` 编辑并看图 → 按需 `tinge_render` 导出。项目历史默认不返回，查看时显式设置 `history_limit`。后续编辑沿用返回的修订，冲突或重连后再读项目；统计、比较和后台任务按需使用。完整结果只在结构化数据中返回一次，文字保持简短。详见 [Agent 工作流](docs/agent-workflow.md)。
+常规调色只需首次读取 `tinge_project_info`（省略配方）→ `tinge_adjust` 一次合并基础调整并看图 → 按需 `tinge_render` 导出。项目历史默认不返回，查看时显式设置 `history_limit`。后续编辑复用 adjustment_id 与返回的修订，省略参数保留原值，不重复叠加。高级图/蒙版才读取完整配方并使用 edit_preview；冲突或重连后再读项目；统计、比较和后台任务按需使用。完整结果只在结构化数据中返回一次，文字保持简短。详见 [Agent 工作流](docs/agent-workflow.md)。
 
-工具参数定义在每个 schema 内合并重复结构，保留完整约束、默认值和本地引用。49 个工具的定义合计约 6.83 万参考 tokens，基础流程 5 个工具约 8,601；这是定义文本的分词测量，实际上下文取决于客户端按需加载哪些工具，不代表每张图片的消耗。
+工具参数定义保留完整约束、默认值和本地引用。基础调色工具 adjust 为 684 参考 tokens，高级 edit_preview 为 6,151；同样五个流程工具（init/project_info/preview/编辑/render）改用 adjust 后从 8,601 降至 3,134，基础三工具 project_info/adjust/render 为 1,393。完整 51 工具目录约 6.98 万参考 tokens；按需加载由客户端负责。这是 `o200k_base` 对紧凑 JSON 的分词测量，不代表每张图片或宿主的实际消耗。
 
 Tinge 的本地 Windows 插件模板在 `plugin/`，包含 manifest、STDIO 连接和图片工作流 Skill。运行 `pwsh -File scripts/package-plugin.ps1` 构建包含原生二进制、Skill 参考资料、许可证与本地 marketplace 的独立包；包固定输出到 `target/plugin-package/tinge`，使用正式 `target/release/tinge.exe`；构建前须结束占用程序的旧进程。脚本输出包根目录。没有提交或发布动作。设计依据、迁移和验收边界见 [插件规范改造](docs/plugin-design.md)。
 

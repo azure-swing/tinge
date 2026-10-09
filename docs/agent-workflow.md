@@ -9,21 +9,26 @@ MCP 使用独立命名工具，每项工具直接提供完整静态 schema 与�
 常规流程：读取项目 → 编辑并看预览 → 需要时导出。
 
 - 新图片可直接 init；inspect/raw_plan 只在需要检查格式、色彩解释或 RAW 参数时调用。
-- 已有项目首次用 `tinge_project_info` 和 `include_recipe:true` 读取当前图与修订。
+- 已有项目首次用 `tinge_project_info` 读取修订，基础调色省略配方。
   历史默认不返回（history_limit=0）；查看历史时显式指定 1..100。
-- 普通调色用 `tinge_edit_preview` 合并编辑与预览；看图时加 `_inline_image:true`，
-  省去单独 preview 和 resources/read。output 可省略，使用托管路径。
+- 普通调色用 `tinge_adjust`，一次合并曝光、对比度、饱和度、自然饱和度、白平衡和明暗。
+  看图时加 `_inline_image:true`，自动使用托管路径，无需另外 preview 或 resources/read。
+- 高级节点图、蒙版才加载 `tinge_edit_preview`，并用 `include_recipe:true` 读取配方。
 - 成功后沿用回执的 revision；发生冲突、重连或已知外部修改时再读项目。
   compare、stats、scopes、capabilities 和完整 schema 均按需调用。
 
 例如对初始空配方的项目：
 
 ```json
-{"name":"tinge_project_info","arguments":{"project":"portrait.tinge","include_recipe":true}}
-{"name":"tinge_edit_preview","arguments":{"project":"portrait.tinge","expect_revision":0,"edits":[{"type":"upsert_node","node":{"id":"light","op":{"type":"exposure","stops":0.2}}},{"type":"set_output","id":"light"}],"_inline_image":true}}
+{"name":"tinge_project_info","arguments":{"project":"portrait.tinge"}}
+{"name":"tinge_adjust","arguments":{"project":"portrait.tinge","expect_revision":0,"exposure":0.2,"contrast":1.1,"saturation":1.05,"highlights":-0.1,"_inline_image":true}}
 ```
 
-以上为 tools/call 的 params；已有节点图时，将新节点连接到实际输出节点。
+以上为 tools/call 的 params。adjust 的值是绝对值，省略/null 保留原值，显式中性值可重置。
+默认 adjustment_id 为 basic，复用 ID 更新同一组，不叠加；新 ID 才在当前输出后追加。
+组由 `__tinge_<ID>_wb/primary/tone` 三节点组成，保留下游节点和输出。
+白平衡为场景线性 RGB 增益 [0.001..100]，不是色温 K；[1,1,1] 中性。
+组被高级编辑改坏或旁路时拒绝自动更新，需协调配方或有意使用新 ID。
 每个工具已有完整静态 schema，不必先查询 `tinge_schema`；只在需要单个算子、
 蒙版或 edit 的说明时使用它。
 
@@ -48,7 +53,7 @@ compact 模式对直接 analyze 和后台 analyze 结果同样省略 histogram�
 图片 URI 读取会验证文件 hash，传输上限为 32 MiB；不会把旧 URI 悄悄指向新像素。
 同步与后台预览共享的会话资源索引最多 64 项；旧 URI 可能淘汰，重新生成预览
 可恢复引用。索引淘汰不会删除文件，也不是磁盘清理操作。
-preview/compare/edit_preview 可省略 output，使用已登记的项目工作路径。
+adjust 自动使用托管路径；preview/compare/edit_preview 可省略 output，使用已登记的项目工作路径。
 preview/compare 的稳定缓存文件可能被替换，所以不是只读操作。
 显式输出默认拒绝覆盖，只有 overwrite:true 才允许，并继续保护源图、项目和资产。
 

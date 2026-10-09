@@ -92,7 +92,7 @@ pub fn target_schema(target: &str) -> Result<Value> {
 }
 fn compact(mut data: Value, command: &str) -> Value {
     if command == "capabilities" {
-        return json!({"name":data["name"],"version":env!("CARGO_PKG_VERSION"),"status":data["status"],"processing":data["processing"],"tools":crate::tools::list()["tools"].as_array().unwrap().iter().map(|tool| &tool["name"]).collect::<Vec<_>>(),"workflow":["project_info","edit_preview","render"],"schema_target":"command name, op:<type>, mask:<type>, edit:<type>","workfiles":"omit preview output for reusable managed path; temporary=true marks draft exports; finalize recycles registered work after explicit final-version selection","jobs":"use named submit tools; session-local; mutation idempotency keys retained for this session; cancellation never rolls back commits"});
+        return json!({"name":data["name"],"version":env!("CARGO_PKG_VERSION"),"status":data["status"],"processing":data["processing"],"tools":crate::tools::list()["tools"].as_array().unwrap().iter().map(|tool| &tool["name"]).collect::<Vec<_>>(),"workflow":["project_info","adjust","render"],"advanced_edit":"edit_preview for explicit graphs/masks; read include_recipe:true only when needed","schema_target":"command name, op:<type>, mask:<type>, edit:<type>","workfiles":"omit preview output for managed path; temporary=true marks draft exports; finalize recycles registered work after explicit final-version selection","jobs":"use named submit tools; session-local; mutation idempotency keys retained for this session; cancellation never rolls back commits"});
     }
     if let Some(analysis) = data.get_mut("analysis").and_then(Value::as_object_mut) {
         analysis.remove("histogram");
@@ -212,7 +212,7 @@ pub fn handle(session: &mut Session, message: Value, initialized: &mut bool) -> 
             *initialized = true;
             session.persistent = true;
             Ok(
-                json!({"protocolVersion":protocol,"capabilities":{"tools":{},"resources":{}},"serverInfo":{"name":"tinge","version":env!("CARGO_PKG_VERSION")},"instructions":"Use named tools and visible schemas. Read project_info initially; reuse the returned revision, re-read on conflict/reconnect. Ordinary edits: edit_preview; _inline_image:true when viewing pixels. Heavy work: submit tool then job_status. Before retrying check committed/revision/preview_error; cancellation never undoes commits. Jobs and retry keys are session-local. Paths are local and unrestricted. Finalize only a selected revision with authorized cleanup."}),
+                json!({"protocolVersion":protocol,"capabilities":{"tools":{},"resources":{}},"serverInfo":{"name":"tinge","version":env!("CARGO_PKG_VERSION")},"instructions":"Use named tools and visible schemas. Basic grading: project_info (recipe omitted), adjust all controls in one call, render. Reuse adjustment_id and returned revision; omitted controls stay unchanged. Load edit_preview and include_recipe:true only for advanced graphs/masks. Re-read on conflict/reconnect. _inline_image:true when viewing pixels. Heavy work: submit tool then job_status. Before retrying check committed/revision/preview_error; cancellation never undoes commits. Jobs and retry keys are session-local. Paths are local and unrestricted. Finalize only a selected revision with authorized cleanup."}),
             )
         }
         "ping" => Ok(json!({})),
@@ -369,7 +369,13 @@ mod tests {
             &mut init,
         )
         .unwrap();
-        assert_eq!(r["result"]["tools"][0]["name"], "tinge_capabilities");
+        assert!(
+            r["result"]["tools"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|t| t["name"] == "tinge_capabilities")
+        );
         let r=handle(&mut s,json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"tinge_capabilities","arguments":{}}}),&mut init).unwrap();
         assert_eq!(r["result"]["isError"], false);
         let r=handle(&mut s,json!({"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"tinge_capabilities","arguments":{"typo":1}}}),&mut init).unwrap();

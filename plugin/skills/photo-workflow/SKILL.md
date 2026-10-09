@@ -10,12 +10,18 @@ An attachment alone is not a known local path. No connection means no edit.
 Prefer the shortest useful loop:
 - New image: `tinge_init` for revisioned work, or `tinge_grade` for a one-off
   recipe/export. Inspect metadata, RAW settings or capabilities only if uncertain.
-- Existing project: `tinge_project_info` with `include_recipe:true` once to learn
-  the graph and revision. History is opt-in. After a successful edit, reuse the
+- Existing project: `tinge_project_info` once for the revision; omit the recipe
+  for basic grading. History is opt-in. After a successful edit, reuse the
   returned revision; re-read on conflict, reconnect or known external changes.
-- Ordinary edits: `tinge_edit_preview`, observed `expect_revision`, managed output
-  (omit `output`), and `_inline_image:true` when evaluating pixels. Do not also
-  request preview, compare or stats unless they answer a separate need.
+- Basic grading: `tinge_adjust` with observed `expect_revision`; combine exposure,
+  contrast, saturation, vibrance, white balance and tones in one call. Values are
+  absolute; omitted/null controls stay unchanged. Reuse `adjustment_id` (default
+  `basic`) to update without stacking; a new ID appends a group. Use
+  `_inline_image:true` when evaluating pixels. Do not also request preview,
+  compare or stats unless they answer a separate need.
+- Advanced graphs/masks: load `tinge_edit_preview` and read `include_recipe:true`
+  only when needed. Preserve the existing graph. A conflicting/bypassed basic
+  group needs reconciliation or a deliberately new adjustment ID.
 - Heavy work: use the corresponding `tinge_submit_*`, keep its actual job ID,
   and check `tinge_job_status` without tight polling. New mutations get new
   idempotency keys; identical retries reuse the key and arguments in that session.

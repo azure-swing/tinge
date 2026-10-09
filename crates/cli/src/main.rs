@@ -1,3 +1,4 @@
+mod adjust;
 #[cfg(test)]
 mod agent_tests;
 mod api;

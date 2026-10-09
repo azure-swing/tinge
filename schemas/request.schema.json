@@ -3120,6 +3120,141 @@
   "oneOf": [
     {
       "additionalProperties": false,
+      "description": "Absolute controls; omitted/null values preserve the previous adjustment.",
+      "properties": {
+        "adjustment_id": {
+          "default": "basic",
+          "description": "Reuse this ID to update the same group; a new ID appends another group.",
+          "type": "string"
+        },
+        "blacks": {
+          "default": null,
+          "format": "float",
+          "maximum": 1,
+          "minimum": -1,
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "command": {
+          "const": "adjust",
+          "type": "string"
+        },
+        "contrast": {
+          "default": null,
+          "format": "float",
+          "maximum": 4,
+          "minimum": 0,
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "expect_revision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "exposure": {
+          "default": null,
+          "description": "Exposure in stops; zero is neutral.",
+          "format": "float",
+          "maximum": 24,
+          "minimum": -24,
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "highlights": {
+          "default": null,
+          "format": "float",
+          "maximum": 1,
+          "minimum": -1,
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "label": {
+          "default": "basic adjustment",
+          "type": "string"
+        },
+        "max_edge": {
+          "default": 1600,
+          "format": "uint32",
+          "maximum": 16384,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "project": {
+          "type": "string"
+        },
+        "saturation": {
+          "default": null,
+          "format": "float",
+          "maximum": 4,
+          "minimum": 0,
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "shadows": {
+          "default": null,
+          "format": "float",
+          "maximum": 1,
+          "minimum": -1,
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "vibrance": {
+          "default": null,
+          "format": "float",
+          "maximum": 1,
+          "minimum": -1,
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "white_balance": {
+          "default": null,
+          "description": "Scene-linear RGB gains, each 0.001..100; [1,1,1] is neutral.",
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "whites": {
+          "default": null,
+          "format": "float",
+          "maximum": 1,
+          "minimum": -1,
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "project",
+        "expect_revision"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
       "properties": {
         "command": {
           "const": "selections",
