@@ -35,6 +35,26 @@ Search first-party code first: `rg <pattern> crates docs scripts plugin tests`.
   do not bound peak process memory.
 - Source/project/assets/history protection also applies to overwrite and cleanup.
 
+## Completing changes
+
+- For every completed task change set, increment the project version once.
+  Default to a SemVer patch increment unless the user specifies another version
+  or the change requires a minor/major increment. Do not bump once per file,
+  test run or repair attempt within the same task.
+- Keep the workspace version in Cargo.toml, first-party package versions in
+  Cargo.lock, the plugin manifest and current-version documentation consistent.
+  Apply the version bump before final verification so tests and release builds
+  validate the version being delivered.
+- After the required checks pass, commit the task's changes and version metadata,
+  then push the current branch to the configured GitHub remote. The user has
+  authorized this as the normal completion workflow. The current destination is
+  origin: https://github.com/azure-swing/tinge.git. Do not stop at a local commit.
+- Preserve unrelated worktree changes and exclude them from the task's commit.
+  Use a normal push; resolve remote updates without overwriting others' work.
+- If checks, commit or push fail, address the cause where possible and report
+  any remaining blocker accurately. Completion reports must state the version,
+  commit and confirmed push result; never claim a push succeeded without evidence.
+
 ## Verification
 
 Use Rust 1.95 with rustfmt/clippy and a C++17/CMake toolchain (MSVC on Windows).
