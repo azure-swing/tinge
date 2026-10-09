@@ -1,5 +1,9 @@
 # 当前交接状态
 
+2026-10-10 / 0.2.5：将网页预览写入插件默认交互工作流：项目明确后启动/复用查看器，在首次调整前通过宿主打开页面并确认项目/修订；静态图片不能替代网页展示。显式无网页/批量导出和只读元数据检查可跳过；仅启用插件而没有照片不会启动网页。引擎与 headless 命令不变。
+
+Skill 格式校验、Rustfmt、Clippy `-D warnings`、完整 workspace 139 项测试、正式 release 构建、插件/Agent 验收及前端 5 项测试通过。安装 0.2.5 后真实 Codex 宿主发现 42 工具、toolsError 为空；源码/包内/安装缓存的 Skill 与二进制分别通过 SHA-256 一致性检查。提示回放用例更新为 22 项，未执行真实模型工具选择回放，不能据结构验收宣称自动开页行为已经由模型验收。
+
 2026-10-10 / 0.2.4：修复桌面宿主无法启动 Tinge 的插件路径问题。旧兼容布局的 command 使用未展开的 ${PLUGIN_ROOT}，宿主报 os error 3；改用标准 Agent Plugins 1.0 根 manifest/MCP 配置及包内相对 stdio 路径。包验收不再自行替换该变量，新增包内二进制 SHA-256/版本/握手检查及真实 Codex 宿主工具发现脚本。宿主验收只检查启动及目录，不代表模型工具选择或全部宿主兼容性。
 
 Rustfmt、Clippy `-D warnings`、完整 workspace 139 项测试、正式 release 构建、MCP/Agent 与包验收、前端 5 项测试通过。使用桌面版自带 Codex app-server 复现旧包 0 工具/os error 3；安装 0.2.4 后返回 serverInfo.version=0.2.4、42 工具及空 toolsError。正式程序、生成包与安装缓存程序的 SHA-256 完全一致；真实 CR3 导入、调色、预览及全尺寸导出另行验证。报告见 `artifacts/tinge-host-before.json`、`artifacts/tinge-host-after.json` 及 `artifacts/tinge-*-acceptance-0.2.4.json`。

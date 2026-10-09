@@ -6,6 +6,9 @@
 
 ## 启动
 
+从 0.2.5 起，插件 Skill 默认在交互照片工作流中启动查看器并打开宿主浏览器，复用同一项目的页面。
+这是 agent 工作流规则；只启用插件而尚未选择照片/项目不会启动网页，原生 headless 命令不变。
+
 ```powershell
 .\target\release\tinge.exe view portrait.tinge
 # 默认自动打开系统浏览器；只监听 127.0.0.1，端口 0 自动选择空闲端口。

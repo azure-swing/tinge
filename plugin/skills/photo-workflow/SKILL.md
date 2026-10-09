@@ -7,9 +7,21 @@ Use Tinge's named MCP tools with their visible schemas; no `command` or generic
 request wrapper. Ask for a missing local source path or ambiguous target.
 An attachment alone is not a known local path. No connection means no edit.
 
+Interactive photo work defaults to the web viewer. Once the project is known or
+created, call `tinge_viewer_open` and open its returned URL in the host browser
+before the first adjustment; no separate request to show the webpage is needed.
+Reuse an already open viewer/tab for that project, and keep its serving session
+alive. Verify the page displays the intended project/revision; an inline image
+or a returned URL alone does not mean the interactive page was shown. If the host
+cannot open a browser, keep the viewer running, provide its URL and explain the
+display limitation. Skip this for explicit no-webpage/batch-export requests or
+read-only metadata inspection. Enabling the plugin without a photo/project does
+not itself launch a viewer. See [viewer lifecycle](references/viewer-workflow.md).
+
 Prefer the shortest useful loop:
-- New image: `tinge_init` for revisioned work, or `tinge_grade` for a one-off
-  recipe/export. Inspect metadata, RAW settings or capabilities only if uncertain.
+- New image: `tinge_init`, then open the viewer. Use `tinge_grade` for an explicit
+  one-off export without UI. Inspect metadata, RAW settings or capabilities only
+  if uncertain.
 - Existing project: `tinge_project_info` once for the revision; omit the recipe
   for basic grading. History is opt-in. After a successful edit, reuse the
   returned revision; re-read on conflict, reconnect or known external changes.
@@ -28,8 +40,9 @@ Prefer the shortest useful loop:
 - Source statistics: `tinge_analyze`; project recipe statistics: `tinge_stats`.
   `tinge_lut_bake` takes a project and optional revision. Direct recipe processing
   belongs to advanced `tinge_grade`, `tinge_validate` and graph editing.
-- Export: `tinge_render` for the requested revision/path/color space. Viewer,
-  scopes, full diagnostics and history are optional, not prerequisites.
+- Export: `tinge_render` for the requested revision/path/color space. The running
+  viewer follows new revisions automatically; do not reopen it after each edit.
+  Scopes, full diagnostics and history remain optional.
 
 A failed preview or cancelled job may still have committed: inspect `commit`,
 `committed`, `revision` and `preview_error` before retrying. On conflict, reconcile

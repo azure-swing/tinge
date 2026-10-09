@@ -6,7 +6,12 @@ MCP 使用独立命名工具，每项工具直接提供完整静态 schema 与�
 
 ## 一次调色迭代
 
-常规流程：读取项目 → 编辑并看预览 → 需要时导出。
+常规交互流程：创建/读取项目 → 自动打开网页查看器 → 编辑并看预览 → 需要时导出。
+
+照片/项目明确后默认调用 `tinge_viewer_open`，并通过宿主浏览器打开返回 URL；已有页面直接复用。
+确认页面显示目标项目/修订，静态图片或只返回 URL 不等于已经展示交互网页。服务会话需保持运行，
+后续调色由网页自动跟随更新。无法在宿主打开时提供 URL 和明确说明。用户明确要求不打开网页、
+批量只导出或只读元数据检查时跳过；仅启用插件而未选择照片/项目不会启动查看器。
 
 - 新图片可直接 init；inspect/raw_plan 只在需要检查格式、色彩解释或 RAW 参数时调用。
 - 已有项目首次用 `tinge_project_info` 读取修订，基础调色省略配方。
@@ -21,6 +26,7 @@ MCP 使用独立命名工具，每项工具直接提供完整静态 schema 与�
 
 ```json
 {"name":"tinge_project_info","arguments":{"project":"portrait.tinge"}}
+{"name":"tinge_viewer_open","arguments":{"project":"portrait.tinge"}}
 {"name":"tinge_adjust","arguments":{"project":"portrait.tinge","expect_revision":0,"exposure":0.2,"contrast":1.1,"saturation":1.05,"highlights":-0.1,"_inline_image":true}}
 ```
 
@@ -92,7 +98,7 @@ tinge_cache_info 的字节数不包含活动渲染、PNG 缓冲、OCIO、查看�
 tinge_viewer_open 在同一会话复用规范项目路径对应的查看服务，返回 URL 和 PID。
 端口复用时沿用原值；只管理本会话子进程，viewer_close 和会话结束会关闭它们。
 独立 CLI 仍使用 view。查看器预算独立，configure 不改变它。
-查看器是可选的；编辑、预览资源与导出可以完全脱离 UI。
+原生编辑、预览资源与导出仍可脱离 UI；插件的交互照片工作流默认打开查看器，由用户显式选择无界面工作流。
 
 ## 验证
 

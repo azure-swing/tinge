@@ -6,18 +6,22 @@
       "prompt": "用 Tinge 调整 C:/photos/portrait.tinge 的曝光并给我看预览。",
       "expected_tools": [
         "tinge_project_info",
-        "tinge_adjust"
+        "tinge_adjust",
+        "tinge_viewer_open"
       ],
       "forbidden_tools": [
         "tinge_finalize"
       ],
-      "expectation": "Read current revision without recipe, combine basic controls in one adjust, reuse adjustment_id and inspect preview; no cleanup.",
+      "expectation": "Read current revision without recipe, combine basic controls in one adjust, reuse adjustment_id and inspect preview; no cleanup. In a fresh session, open the interactive viewer in the host browser before adjusting; a static PNG is not a substitute.",
       "required_any_groups": [
         [
           "tinge_project_info"
         ],
         [
           "tinge_adjust"
+        ],
+        [
+          "tinge_viewer_open"
         ]
       ]
     },
@@ -27,18 +31,22 @@
       "prompt": "C:/photos/portrait.tinge 这张人像太暗了，提亮一点，保留修改历史。",
       "expected_tools": [
         "tinge_project_info",
-        "tinge_adjust"
+        "tinge_adjust",
+        "tinge_viewer_open"
       ],
       "forbidden_tools": [
         "tinge_finalize"
       ],
-      "expectation": "Read current revision without recipe, combine basic controls in one adjust, reuse adjustment_id and inspect preview; no cleanup.",
+      "expectation": "Read current revision without recipe, combine basic controls in one adjust, reuse adjustment_id and inspect preview; no cleanup. In a fresh session, open the interactive viewer in the host browser before adjusting; a static PNG is not a substitute.",
       "required_any_groups": [
         [
           "tinge_project_info"
         ],
         [
           "tinge_adjust"
+        ],
+        [
+          "tinge_viewer_open"
         ]
       ]
     },
@@ -48,7 +56,8 @@
       "prompt": "用 Tinge 把 C:/photos/portrait.tinge 曝光设为 +0.3、对比度 1.1、饱和度 1.05，并压一点高光，一次调整后给我看图。",
       "expected_tools": [
         "tinge_project_info",
-        "tinge_adjust"
+        "tinge_adjust",
+        "tinge_viewer_open"
       ],
       "required_any_groups": [
         [
@@ -56,12 +65,15 @@
         ],
         [
           "tinge_adjust"
+        ],
+        [
+          "tinge_viewer_open"
         ]
       ],
       "forbidden_tools": [
         "tinge_finalize"
       ],
-      "expectation": "One combined basic adjustment after observing revision; absolute controls, inline preview, omit full recipe."
+      "expectation": "One combined basic adjustment after observing revision; absolute controls, inline preview, omit full recipe. In a fresh session, open the interactive viewer in the host browser before adjusting; a static PNG is not a substitute."
     },
     {
       "id": "read-project",
@@ -321,6 +333,50 @@
         "revision": 3
       },
       "expectation": "Use the same render tool with background:true, retain its actual job ID and poll job_status."
+    },
+    {
+      "id": "default-webpage-new-photo",
+      "kind": "direct",
+      "prompt": "用 Tinge 把 C:/photos/landscape.CR3 调成晚霞。",
+      "expected_tools": [
+        "tinge_init",
+        "tinge_viewer_open",
+        "tinge_adjust"
+      ],
+      "required_any_groups": [
+        [
+          "tinge_init"
+        ],
+        [
+          "tinge_viewer_open"
+        ],
+        [
+          "tinge_adjust",
+          "tinge_edit_preview"
+        ]
+      ],
+      "forbidden_tools": [
+        "tinge_finalize"
+      ],
+      "expectation": "Create a revisioned project, start the viewer and show its returned URL in the host browser before editing; verify the intended project/revision and preserve the live page."
+    },
+    {
+      "id": "explicit-no-webpage-export",
+      "kind": "direct",
+      "prompt": "用 Tinge 把 C:/photos/portrait.tinge 导出到 C:/photos/final.png，不要打开网页。",
+      "expected_tools": [
+        "tinge_render"
+      ],
+      "required_any_groups": [
+        [
+          "tinge_render"
+        ]
+      ],
+      "forbidden_tools": [
+        "tinge_viewer_open",
+        "tinge_finalize"
+      ],
+      "expectation": "Honor the explicit no-webpage request; export the requested project without opening a viewer."
     }
   ]
 }
