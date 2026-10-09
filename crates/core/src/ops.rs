@@ -7,7 +7,7 @@ use crate::{
 use anyhow::{Context, Result, ensure};
 use rayon::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
-use vibecolor_color::{from_display, hsv_to_rgb, luminance, mul, rgb_to_hsv, to_display};
+use tinge_color::{from_display, hsv_to_rgb, luminance, mul, rgb_to_hsv, to_display};
 
 fn saturation(rgb: [f32; 3], amount: f32) -> [f32; 3] {
     let l = luminance(rgb);

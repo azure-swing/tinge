@@ -2,7 +2,7 @@
 
 配方 schema v1 使用 `nodes`、`output`、`masks`。保留 ID `source` 表示源图。每个节点有 `id`、`inputs`、`op`、可选 `mask`、`mix`（0..1，默认 1）和 `enabled`（默认 true）。除 blend 外需要一个输入；blend 需要两个。整个图（包括未连接或禁用节点）都参与参数/依赖/循环检查，渲染只执行 output 的祖先。
 
-运行 `vibecolor schema recipe` 获取字段类型和可选默认值。参数单位如下，范围以运行时验证为准。
+运行 `tinge schema recipe` 获取字段类型和可选默认值。参数单位如下，范围以运行时验证为准。
 
 | `op.type` | 字段与语义 | 处理域 |
 | --- | --- | --- |

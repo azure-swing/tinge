@@ -12,10 +12,10 @@ use std::{
 fn project() -> (tempfile::TempDir, PathBuf) {
     let dir = tempfile::tempdir().unwrap();
     let source = dir.path().join("source.png");
-    let path = dir.path().join("test.vcolor");
-    let frame = vibecolor_core::Frame::new(8, 6, vec![[0.2, 0.3, 0.4, 1.0]; 48]).unwrap();
-    vibecolor_io::export(&frame, &source, Default::default()).unwrap();
-    vibecolor_project::init(&path, &source, None).unwrap();
+    let path = dir.path().join("test.tinge");
+    let frame = tinge_core::Frame::new(8, 6, vec![[0.2, 0.3, 0.4, 1.0]; 48]).unwrap();
+    tinge_io::export(&frame, &source, Default::default()).unwrap();
+    tinge_project::init(&path, &source, None).unwrap();
     (dir, path)
 }
 fn request(value: Value) -> Request {
@@ -65,7 +65,7 @@ fn call(session: &mut Session, arguments: Value, lean: bool) -> Value {
             arguments["include_analysis"] = json!(true);
         }
     }
-    protocol::handle(session,json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":format!("vibecolor_{command}"),"arguments":arguments}}),&mut true).unwrap()["result"].clone()
+    protocol::handle(session,json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":format!("tinge_{command}"),"arguments":arguments}}),&mut true).unwrap()["result"].clone()
 }
 fn await_job(session: &mut Session, id: u64) -> Value {
     let deadline = Instant::now() + Duration::from_secs(10);
@@ -180,7 +180,7 @@ fn edit_preview_checks_output_before_commit_and_reports_cancel_after_commit() {
     let mut session = Session::default();
     let body = json!({"command":"edit_preview","project":path,"expect_revision":0,"edits":edits(),"output":output});
     assert!(session.run(request(body)).is_err());
-    assert_eq!(vibecolor_project::load(&path).unwrap().revision, 0);
+    assert_eq!(tinge_project::load(&path).unwrap().revision, 0);
     let cancel = session.cancel.clone();
     session.observer = Some(Arc::new(move |event| {
         if event["committed"] == true {
@@ -192,7 +192,7 @@ fn edit_preview_checks_output_before_commit_and_reports_cancel_after_commit() {
     assert_eq!(receipt["revision"], 1);
     assert!(receipt["preview_error"].is_object());
     assert!(!dir.path().join("cancelled.png").exists());
-    assert_eq!(vibecolor_project::load(&path).unwrap().revision, 1);
+    assert_eq!(tinge_project::load(&path).unwrap().revision, 1);
 
     let (batch_dir, batch_path) = project();
     let mut batch_session = Session::default();
@@ -240,7 +240,7 @@ fn async_edit_is_idempotent_and_resources_are_readable_from_main_session() {
     );
     let repeated = session.run(request(body.clone())).unwrap();
     assert_eq!(repeated["job"], first["job"]);
-    assert_eq!(vibecolor_project::load(&path).unwrap().revision, 1);
+    assert_eq!(tinge_project::load(&path).unwrap().revision, 1);
     let mut different = body;
     different["request"]["label"] = json!("different");
     assert!(
@@ -284,7 +284,7 @@ fn evicted_jobs_keep_mutation_receipts_and_never_reexecute_retries() {
     assert_eq!(retry["status"], "expired");
     assert_eq!(retry["commit"]["revision"], 1);
     assert_eq!(retry["reused"], true);
-    assert_eq!(vibecolor_project::load(&path).unwrap().revision, 1);
+    assert_eq!(tinge_project::load(&path).unwrap().revision, 1);
 }
 
 #[test]
@@ -360,12 +360,12 @@ fn managed_preview_reuses_filename_and_exports_need_explicit_draft_flag() {
 #[test]
 fn analysis_cache_distinguishes_source_color_interpretation() {
     let (dir, srgb) = project();
-    let linear = dir.path().join("linear.vcolor");
-    vibecolor_project::init(
+    let linear = dir.path().join("linear.tinge");
+    tinge_project::init(
         &linear,
         &dir.path().join("source.png"),
-        Some(vibecolor_color::ColorSpace {
-            transfer: vibecolor_color::Transfer::Linear,
+        Some(tinge_color::ColorSpace {
+            transfer: tinge_color::Transfer::Linear,
             ..Default::default()
         }),
     )
@@ -396,7 +396,7 @@ fn full_diagnostics_do_not_implicitly_transfer_pixels() {
         if let Some(inline) = inline {
             arguments["_inline_image"] = json!(inline);
         }
-        let result = protocol::handle(&mut session, json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"vibecolor_preview","arguments":arguments}}), &mut true).unwrap();
+        let result = protocol::handle(&mut session, json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"tinge_preview","arguments":arguments}}), &mut true).unwrap();
         assert_eq!(result["result"]["isError"], false);
         assert_eq!(result["result"]["content"][1]["type"], expected);
         assert!(

@@ -14,8 +14,8 @@ use std::{
     io::{Read, Write},
     path::Path,
 };
-use vibecolor_color::{ColorSpace, Primaries, Transfer, convert_linear, decode, encode};
-use vibecolor_core::Frame;
+use tinge_color::{ColorSpace, Primaries, Transfer, convert_linear, decode, encode};
+use tinge_core::Frame;
 
 #[derive(Debug, Serialize)]
 pub struct ImageInfo {
@@ -110,7 +110,7 @@ pub fn inspect(path: &Path) -> Result<ImageInfo> {
                 .chromaticities
                 .map(|c| [c.red, c.green, c.blue, c.white].map(|v| [v.x(), v.y()]));
             color_metadata.alpha_mode = if exr_io::is_straight(&h.own_attributes) {
-                "straight (explicit VibeColor attribute)"
+                "straight (explicit Tinge attribute)"
             } else {
                 "premultiplied (EXR convention)"
             }

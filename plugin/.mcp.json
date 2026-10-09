@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "tinge": {
-      "command": "${PLUGIN_ROOT}/bin/vibecolor.exe",
+      "command": "${PLUGIN_ROOT}/bin/tinge.exe",
       "args": [
         "mcp"
       ]

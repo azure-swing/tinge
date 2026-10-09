@@ -1,6 +1,6 @@
-use vibecolor_color::{ColorSpace, Primaries, Transfer, convert_linear, decode};
-use vibecolor_core::Frame;
-use vibecolor_io::{ExportOptions, export, inspect, load, load_signal};
+use tinge_color::{ColorSpace, Primaries, Transfer, convert_linear, decode};
+use tinge_core::Frame;
+use tinge_io::{ExportOptions, export, inspect, load, load_signal};
 
 #[test]
 fn wide_gamut_icc_png_and_float_tiff_roundtrip() {
@@ -325,7 +325,7 @@ fn exr_alpha_conventions_are_explicit_at_zero_alpha_and_straight_override() {
             .contains("additive")
     );
     image.layer_data.attributes.other.insert(
-        Text::from("vibecolorAlphaMode"),
+        Text::from("tingeAlphaMode"),
         AttributeValue::Text(Text::from("straight")),
     );
     image.write().to_file(&path).unwrap();

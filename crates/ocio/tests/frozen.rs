@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use vibecolor_ocio::{ConfigSource, Pipeline, Transform, apply_with_context, archive_file};
+use tinge_ocio::{ConfigSource, Pipeline, Transform, apply_with_context, archive_file};
 
 #[derive(serde::Deserialize)]
 struct CustomFixture {
@@ -67,7 +67,7 @@ fn binary_ocioz_retains_all_context_choices_without_original_files() {
     let mut expected = BTreeMap::new();
     let fixture: CustomFixture =
         serde_json::from_str(include_str!("fixtures/custom-ocio-2.5.2.json")).unwrap();
-    assert_eq!(fixture.engine_version, vibecolor_ocio::version().unwrap());
+    assert_eq!(fixture.engine_version, tinge_ocio::version().unwrap());
     for case in &fixture.cases {
         let mut pixels = case.input.clone();
         apply_with_context(&original, &transform, &mut pixels, &case.context).unwrap();
@@ -100,7 +100,7 @@ fn binary_ocioz_retains_all_context_choices_without_original_files() {
 
 #[test]
 fn acescg_config_anchor_converts_to_and_from_canonical_grading_frame() {
-    use vibecolor_color::{Primaries, convert_linear};
+    use tinge_color::{Primaries, convert_linear};
     let mut pipeline: Pipeline =
         serde_json::from_str(include_str!("../../../examples/aces2-srgb.json")).unwrap();
     let baseline = pipeline.clone();
@@ -116,7 +116,7 @@ fn acescg_config_anchor_converts_to_and_from_canonical_grading_frame() {
             assert!((a[c] - b[c]).abs() < 4e-5, "{a:?} {b:?}");
         }
     }
-    pipeline.input = vibecolor_ocio::InputEncoding::Encoded {
+    pipeline.input = tinge_ocio::InputEncoding::Encoded {
         color_space: "ACEScg".into(),
     };
     let mut encoded = scene.map(|p| {
@@ -129,7 +129,7 @@ fn acescg_config_anchor_converts_to_and_from_canonical_grading_frame() {
             assert!((a[c] - b[c]).abs() < 3e-5);
         }
     }
-    pipeline.working_encoding.transfer = vibecolor_color::Transfer::Srgb;
+    pipeline.working_encoding.transfer = tinge_color::Transfer::Srgb;
     assert!(pipeline.validate().is_err());
 }
 

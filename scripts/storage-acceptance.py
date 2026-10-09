@@ -23,9 +23,9 @@ def main():
     report = {'executable': str(args.executable.resolve())}
     mcp = MCP(args.executable.resolve())
     try:
-        with tempfile.TemporaryDirectory(prefix='vibecolor-storage-', dir=args.report.parent.resolve()) as folder:
+        with tempfile.TemporaryDirectory(prefix='tinge-storage-', dir=args.report.parent.resolve()) as folder:
             root = Path(folder)
-            source, project = root / 'source.png', root / 'test.vcolor'
+            source, project = root / 'source.png', root / 'test.tinge'
             png(source)
             mcp.data({'command':'init','input':str(source),'project':str(project)})
             first = mcp.data({'command':'preview','project':str(project),'include_analysis':False})
@@ -72,12 +72,12 @@ def main():
                 report['system_bin_and_exact_restore_verified'] = True
             # Historical revision renders after recycling; no extra file is created by viewer.
             old_preview = mcp.data({'command':'preview','project':str(project),'revision':0,'include_analysis':False})
-            temp_before = set(Path(tempfile.gettempdir()).glob('vibecolor-view-*'))
+            temp_before = set(Path(tempfile.gettempdir()).glob('tinge-view-*'))
             viewer = mcp.data({'command':'viewer_open','project':str(project)})
             url = viewer['url']
             token = url.rstrip('/').split('/')[-1]
             body = json.dumps({'revision':0,'reference':None,'max_edge':1600,'client_id':'storage-acceptance'}).encode()
-            req = urllib.request.Request(url+'api/preview',data=body,headers={'Content-Type':'application/json','X-VibeColor':token})
+            req = urllib.request.Request(url+'api/preview',data=body,headers={'Content-Type':'application/json','X-Tinge':token})
             job = json.load(urllib.request.urlopen(req))['job']
             deadline = time.monotonic()+15
             while True:
@@ -87,7 +87,7 @@ def main():
                 time.sleep(0.025)
             image = urllib.request.urlopen(url+status['result']['image']).read()
             assert image == Path(old_preview['preview']['path']).read_bytes()
-            assert set(Path(tempfile.gettempdir()).glob('vibecolor-view-*')) == temp_before
+            assert set(Path(tempfile.gettempdir()).glob('tinge-view-*')) == temp_before
             mcp.data({'command':'viewer_close','project':str(project)})
             report.update({'passed':True,'registered_files_recycled':2,'recycled_bytes':done['recycled_bytes'],'source_and_history_unchanged':True,'durable_and_final_exports_retained':True,'changed_and_unknown_files_retained':True,'historical_viewer_matches_cli_png_bytes':True,'viewer_creates_no_temp_directory':True,'managed_preview_reuses_filename':True})
     finally:

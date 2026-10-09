@@ -1,17 +1,17 @@
 # OCIO / ACES 色彩链
 
-VibeColor 静态链接真实 OpenColorIO 2.5.2，通过 Rust 调用 C++ CPU processor。默认绑定的 stub 模式没有启用，运行时仍明确拒绝 stub。内置官方配置包含 ACES 1.3 和 ACES 2.0，配置名、引擎版本和 view 写入项目历史。
+tinge 静态链接真实 OpenColorIO 2.5.2，通过 Rust 调用 C++ CPU processor。默认绑定的 stub 模式没有启用，运行时仍明确拒绝 stub。内置官方配置包含 ACES 1.3 和 ACES 2.0，配置名、引擎版本和 view 写入项目历史。
 
 ## 使用
 
 ```powershell
-$vc = '.\target\release\vibecolor.exe'
+$vc = '.\target\release\tinge.exe'
 & $vc ocio-configs
 & $vc ocio-inspect --builtin studio-config-v4.0.0_aces-v2.0_ocio-v2.5
-& $vc init scene.exr --project scene.vcolor --color-pipeline examples/aces2-srgb.json
-& $vc preview scene.vcolor --output preview.png
-& $vc render scene.vcolor --output final.png
-& $vc render scene.vcolor --output scene-linear.exr
+& $vc init scene.exr --project scene.tinge --color-pipeline examples/aces2-srgb.json
+& $vc preview scene.tinge --output preview.png
+& $vc render scene.tinge --output final.png
+& $vc render scene.tinge --output scene-linear.exr
 
 # 真正的 LogC4 编码图片；不是相机 RAW 文件
 & $vc grade logc4.tif --recipe examples/cinematic.json --color-pipeline examples/logc4-aces2.json --output aces.png
@@ -42,12 +42,12 @@ $vc = '.\target\release\vibecolor.exe'
 ## P3、HDR 和文件交换
 
 ```powershell
-& $vc init scene.exr --project hdr.vcolor --color-pipeline examples/aces2-hdr1000.json
-& $vc render hdr.vcolor --output hdr-pq.png
-& $vc preview hdr.vcolor --output hdr-sdr-preview.png
-& $vc init scene.exr --project p3.vcolor --color-pipeline examples/aces2-display-p3.json
-& $vc render p3.vcolor --output p3.png
-& $vc render hdr.vcolor --output acescg.exr --output-space '{"primaries":"aces_cg","transfer":"linear"}'
+& $vc init scene.exr --project hdr.tinge --color-pipeline examples/aces2-hdr1000.json
+& $vc render hdr.tinge --output hdr-pq.png
+& $vc preview hdr.tinge --output hdr-sdr-preview.png
+& $vc init scene.exr --project p3.tinge --color-pipeline examples/aces2-display-p3.json
+& $vc render p3.tinge --output p3.png
+& $vc render hdr.tinge --output acescg.exr --output-space '{"primaries":"aces_cg","transfer":"linear"}'
 & $vc inspect hdr-pq.png
 ```
 
@@ -59,7 +59,7 @@ Rec.2020 PQ PNG 写实际 cICP `[9,16,0,1]`，不附带会造成误导的 SDR IC
 
 EXR 写 `colorInteropID` 和一致的 chromaticities，以兼容旧应用。支持的标准 ID 为 `lin_rec709_scene`、`lin_p3d65_scene`、`lin_rec2020_scene`、`lin_ap1_scene`。读取标准 ID、检查与 chromaticities 的一致性，并可用矩阵转换未具名的自定义 RGB chromaticities；冲突、未知 ID、data 通道要求显式声明或 OCIO 输入。缺少色彩标签的旧 EXR 默认线性 sRGB。当前读取首个可用 RGBA 层，不是完整多层/deep EXR 编辑器。whiteLuminance 可检查但不自动改变场景曝光尺度。
 
-EXR 按文件惯例预乘 alpha，读取时转换到内部 straight alpha。零 alpha 的隐藏 RGB 在导出时丢弃并报告；外部 EXR 的零 alpha additive RGB 当前拒绝，不能用 straight alpha 无损表示。显式 `vibecolorAlphaMode=straight` 的文件可读取，inspect 返回该模式。
+EXR 按文件惯例预乘 alpha，读取时转换到内部 straight alpha。零 alpha 的隐藏 RGB 在导出时丢弃并报告；外部 EXR 的零 alpha additive RGB 当前拒绝，不能用 straight alpha 无损表示。显式 `tingeAlphaMode=straight` 的文件可读取，inspect 返回该模式。
 
 文件格式依据：[PNG 3 cICP](https://www.w3.org/TR/png-3/)、[OpenEXR 技术说明](https://openexr.com/en/latest/TechnicalIntroduction.html)、[ASWF OpenEXR 色彩互操作建议](https://github.com/AcademySoftwareFoundation/ColorInterop/blob/main/Recommendations/04_OpenEXRFiles/OpenEXRFiles.md)。尚未输出 mDCV/cLLI 等 HDR 静态元数据，也未完成 HDR 校准显示验收。
 
@@ -70,7 +70,7 @@ EXR 按文件惯例预乘 alpha，读取时转换到内部 straight alpha。零 
 ```json
 {
   "command": "apply",
-  "project": "scene.vcolor",
+  "project": "scene.tinge",
   "expect_revision": 0,
   "edits": [
     {
@@ -92,11 +92,11 @@ EXR 按文件惯例预乘 alpha，读取时转换到内部 straight alpha。零 
 
 ```powershell
 & $vc ocio-inspect --config-file examples/custom-ocio/config.ocio --context '{"GRADE":"warm"}'
-& $vc init photo.jpg --project custom.vcolor --color-pipeline examples/custom-ocio/pipeline.json
-& $vc preview custom.vcolor --output custom-preview.png
+& $vc init photo.jpg --project custom.tinge --color-pipeline examples/custom-ocio/pipeline.json
+& $vc preview custom.tinge --output custom-preview.png
 ```
 
-init 和 set_color_pipeline 会用 OCIO 原生归档器将配置及其工作目录内、具有受支持 LUT 扩展名的文件保存为完整二进制 OCIOZ。目录结构和未选中的 LUT 也保留，以支持后续视图/上下文选择。`.vcolor.assets/<hash>.ocioz` 的路径和 BLAKE3 hash 写入 pipeline，随修订参与哈希；渲染和缓存命中前验证包内容。既有 OCIOZ 也可导入；从另一项目导入 frozen 配置时复制包到本项目资产目录。
+init 和 set_color_pipeline 会用 OCIO 原生归档器将配置及其工作目录内、具有受支持 LUT 扩展名的文件保存为完整二进制 OCIOZ。目录结构和未选中的 LUT 也保留，以支持后续视图/上下文选择。`.tinge.assets/<hash>.ocioz` 的路径和 BLAKE3 hash 写入 pipeline，随修订参与哈希；渲染和缓存命中前验证包内容。既有 OCIOZ 也可导入；从另一项目导入 frozen 配置时复制包到本项目资产目录。
 
 归档使用 native isArchivable 约束：搜索路径和 FileTransform src 必须是配置工作目录内的相对路径；变量路径应有 `./` 等相对前缀，例如 `./$GRADE/look.cube`。绝对路径、`../` 和开头为变量的路径目前不自动重写，项目导入明确失败；目录外依赖搬迁仍待实现。归档扫描拒绝 link/junction，限制 100000 个目录项和 512 MiB LUT 数据。OCIOZ 不包含任意未知扩展名文件，也不表示所有自定义配置依赖已获得完整覆盖。
 
@@ -105,11 +105,11 @@ init 和 set_color_pipeline 会用 OCIO 原生归档器将配置及其工作目�
 更换上下文应复用 show 返回的 frozen pipeline，以保持包内容不变：
 
 ```powershell
-$p = (& $vc show custom.vcolor | ConvertFrom-Json).data
+$p = (& $vc show custom.tinge | ConvertFrom-Json).data
 $head = $p.history | Where-Object id -eq $p.revision
 $pipeline = $head.color_pipeline
 $pipeline.context.GRADE = 'neutral'
-@{command='apply'; project='custom.vcolor'; expect_revision=$p.revision;
+@{command='apply'; project='custom.tinge'; expect_revision=$p.revision;
   edits=@(@{type='set_color_pipeline'; pipeline=$pipeline})} |
   ConvertTo-Json -Depth 100 | & $vc run -
 ```
@@ -118,7 +118,7 @@ selected input、display 和 preview processors 在提交前编译，缺失 LUT/
 
 `working_space` 是配置中的 OCIO 名称，`working_encoding` 声明它的实际线性 RGB 原色。默认 linear sRGB；可选线性 P3/Rec.2020/ACEScg。输入/显示链在该空间和 canonical Frame 之间转换，alpha 精确保留；节点算子仍使用现有 Frame/算子域，不等于任意节点域处理。必须正确声明配置空间的原色，非线性 working_encoding 被拒绝。`display_name` 和 `preview_display_name` 可指定自定义配置中的实际显示名称；`display` 仍声明文件输出编码，预览必须为 SDR sRGB。
 
-归档与上下文语义依据：[OCIO Config API](https://opencolorio.readthedocs.io/en/v2.5.1/api/config.html)、[固定 OCIO 2.5.2 源码](https://github.com/AcademySoftwareFoundation/OpenColorIO/blob/v2.5.2/include/OpenColorIO/OpenColorIO.h)。VibeColor vendored Rust 绑定增加显式字节长度 API，避免把 ZIP 当作 C 字符串截断，详见 vendor/PATCHES.md。
+归档与上下文语义依据：[OCIO Config API](https://opencolorio.readthedocs.io/en/v2.5.1/api/config.html)、[固定 OCIO 2.5.2 源码](https://github.com/AcademySoftwareFoundation/OpenColorIO/blob/v2.5.2/include/OpenColorIO/OpenColorIO.h)。tinge vendored Rust 绑定增加显式字节长度 API，避免把 ZIP 当作 C 字符串截断，详见 vendor/PATCHES.md。
 
 ## 指定处理空间的调色节点与 Looks
 

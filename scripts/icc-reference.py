@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image, ImageCms, __version__ as pillow_version
 
 root = Path(__file__).resolve().parents[1]
-executable = root / "target/release/vibecolor.exe"
+executable = root / "target/release/tinge.exe"
 artifacts = root / "artifacts"
 
 

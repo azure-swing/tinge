@@ -1681,7 +1681,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
-name = "vibecolor-cli"
+name = "tinge-cli"
 version = "0.2.1"
 dependencies = [
  "anyhow",
@@ -1695,17 +1695,17 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "vibecolor-color",
- "vibecolor-core",
- "vibecolor-engine",
- "vibecolor-io",
- "vibecolor-ocio",
- "vibecolor-project",
+ "tinge-color",
+ "tinge-core",
+ "tinge-engine",
+ "tinge-io",
+ "tinge-ocio",
+ "tinge-project",
  "windows",
 ]
 
 [[package]]
-name = "vibecolor-color"
+name = "tinge-color"
 version = "0.2.1"
 dependencies = [
  "schemars",
@@ -1713,7 +1713,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "vibecolor-core"
+name = "tinge-core"
 version = "0.2.1"
 dependencies = [
  "anyhow",
@@ -1721,12 +1721,12 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "vibecolor-color",
- "vibecolor-ocio",
+ "tinge-color",
+ "tinge-ocio",
 ]
 
 [[package]]
-name = "vibecolor-engine"
+name = "tinge-engine"
 version = "0.2.1"
 dependencies = [
  "anyhow",
@@ -1736,15 +1736,15 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "vibecolor-color",
- "vibecolor-core",
- "vibecolor-io",
- "vibecolor-ocio",
- "vibecolor-project",
+ "tinge-color",
+ "tinge-core",
+ "tinge-io",
+ "tinge-ocio",
+ "tinge-project",
 ]
 
 [[package]]
-name = "vibecolor-io"
+name = "tinge-io"
 version = "0.2.1"
 dependencies = [
  "anyhow",
@@ -1760,12 +1760,12 @@ dependencies = [
  "serde_json",
  "tempfile",
  "tiff",
- "vibecolor-color",
- "vibecolor-core",
+ "tinge-color",
+ "tinge-core",
 ]
 
 [[package]]
-name = "vibecolor-ocio"
+name = "tinge-ocio"
 version = "0.2.1"
 dependencies = [
  "anyhow",
@@ -1776,11 +1776,11 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "vibecolor-color",
+ "tinge-color",
 ]
 
 [[package]]
-name = "vibecolor-project"
+name = "tinge-project"
 version = "0.2.1"
 dependencies = [
  "anyhow",
@@ -1790,10 +1790,10 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "vibecolor-color",
- "vibecolor-core",
- "vibecolor-io",
- "vibecolor-ocio",
+ "tinge-color",
+ "tinge-core",
+ "tinge-io",
+ "tinge-ocio",
 ]
 
 [[package]]

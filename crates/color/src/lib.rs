@@ -1,4 +1,4 @@
-//! Explicit RGB colorimetry. Real OCIO lives in the separate vibecolor-ocio crate.
+//! Explicit RGB colorimetry. Real OCIO lives in the separate tinge-ocio crate.
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

@@ -24,7 +24,7 @@ const TOOLS: &[Tool] = &[
     },
     Tool {
         command: "project_info",
-        description: "Read a local VibeColor project's current or selected revision, optional recipe and paginated history. Does not modify the project.",
+        description: "Read a local Tinge project's current or selected revision, optional recipe and paginated history. Does not modify the project.",
         read_only: true,
         destructive: false,
         open_world: true,
@@ -330,7 +330,7 @@ fn descriptor(tool: &Tool, background: bool) -> Value {
     for (name, description) in [
         (
             "project",
-            "Local .vcolor project path. Relative paths resolve against the server working directory.",
+            "Local .tinge project path. Relative paths resolve against the server working directory.",
         ),
         (
             "input",
@@ -392,7 +392,7 @@ fn descriptor(tool: &Tool, background: bool) -> Value {
     } else {
         tool.description.to_owned()
     };
-    json!({"name":format!("vibecolor_{}{}", if background {"submit_"} else {""}, tool.command),"description":description,"inputSchema":schema,"annotations":{"readOnlyHint":tool.read_only && !background,"destructiveHint":tool.destructive,"openWorldHint":tool.open_world}})
+    json!({"name":format!("tinge_{}{}", if background {"submit_"} else {""}, tool.command),"description":description,"inputSchema":schema,"annotations":{"readOnlyHint":tool.read_only && !background,"destructiveHint":tool.destructive,"openWorldHint":tool.open_world}})
 }
 
 pub fn list() -> &'static Value {
@@ -410,7 +410,7 @@ pub fn list() -> &'static Value {
 }
 
 pub fn request(name: &str, mut arguments: Value) -> Result<(Request, String)> {
-    let name = name.strip_prefix("vibecolor_").context("unknown tool")?;
+    let name = name.strip_prefix("tinge_").context("unknown tool")?;
     let (command, background) = name
         .strip_prefix("submit_")
         .map_or((name, false), |c| (c, true));
@@ -492,10 +492,10 @@ mod tests {
             ["batch", "job_submit"]
         );
         for name in [
-            "vibecolor_run",
-            "vibecolor_agent",
-            "vibecolor_batch",
-            "vibecolor_job_submit",
+            "tinge_run",
+            "tinge_agent",
+            "tinge_batch",
+            "tinge_job_submit",
         ] {
             assert!(!names.contains(name));
         }
@@ -518,11 +518,11 @@ mod tests {
         for command in BACKGROUND {
             let direct = tools
                 .iter()
-                .find(|t| t["name"] == format!("vibecolor_{command}"))
+                .find(|t| t["name"] == format!("tinge_{command}"))
                 .unwrap();
             let queued = tools
                 .iter()
-                .find(|t| t["name"] == format!("vibecolor_submit_{command}"))
+                .find(|t| t["name"] == format!("tinge_submit_{command}"))
                 .unwrap();
             assert_eq!(queued["annotations"]["readOnlyHint"], false);
             assert_eq!(
@@ -539,27 +539,24 @@ mod tests {
     #[test]
     fn named_calls_reject_operation_injection_and_validate_before_execution() {
         for (tool, arguments) in [
-            ("vibecolor_run", json!({"command":"capabilities"})),
-            ("vibecolor_agent", json!({"command":"capabilities"})),
-            ("vibecolor_capabilities", json!({"command":"finalize"})),
+            ("tinge_run", json!({"command":"capabilities"})),
+            ("tinge_agent", json!({"command":"capabilities"})),
+            ("tinge_capabilities", json!({"command":"finalize"})),
             (
-                "vibecolor_submit_preview",
+                "tinge_submit_preview",
                 json!({"request":{"command":"finalize"}}),
             ),
-            ("vibecolor_submit_apply", json!({})),
-            ("vibecolor_batch", json!({"jobs":[]})),
-            ("vibecolor_render", json!({"project":"p.vcolor"})),
-            ("vibecolor_job_status", json!({"job":"invented"})),
-            (
-                "vibecolor_capabilities",
-                json!({"idempotency_key":"unused"}),
-            ),
+            ("tinge_submit_apply", json!({})),
+            ("tinge_batch", json!({"jobs":[]})),
+            ("tinge_render", json!({"project":"p.tinge"})),
+            ("tinge_job_status", json!({"job":"invented"})),
+            ("tinge_capabilities", json!({"idempotency_key":"unused"})),
         ] {
             assert!(request(tool, arguments).is_err(), "accepted {tool}");
         }
         let (queued, _) = request(
-            "vibecolor_submit_preview",
-            json!({"project":"p.vcolor","idempotency_key":"same"}),
+            "tinge_submit_preview",
+            json!({"project":"p.tinge","idempotency_key":"same"}),
         )
         .unwrap();
         let Request::JobSubmit {

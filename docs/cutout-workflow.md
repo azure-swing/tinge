@@ -1,12 +1,12 @@
 # 无模型抠像
 
-VibeColor 在原生 Rust CPU 中执行颜色抠像、交互式 GrabCut 和 Closed-Form Matting。无需网络、模型权重、Python 或 OpenCV 运行库。Python/OpenCV/PyMatting 仅用于开发对照，不随 CLI 分发。复杂背景需要主体框或少量前景/背景标记；没有按语义自动选择人、天空、物体的能力。
+tinge 在原生 Rust CPU 中执行颜色抠像、交互式 GrabCut 和 Closed-Form Matting。无需网络、模型权重、Python 或 OpenCV 运行库。Python/OpenCV/PyMatting 仅用于开发对照，不随 CLI 分发。复杂背景需要主体框或少量前景/背景标记；没有按语义自动选择人、天空、物体的能力。
 
 ## CLI 与 agent
 
 ```powershell
-.\target\release\vibecolor.exe cutout input.png --options examples/cutout/color.json --output cutout.png --matte alpha.png
-.\target\release\vibecolor.exe cutout input.jpg --options examples/cutout/grabcut.json --output subject.png --matte alpha.png
+.\target\release\tinge.exe cutout input.png --options examples/cutout/color.json --output cutout.png --matte alpha.png
+.\target\release\tinge.exe cutout input.jpg --options examples/cutout/grabcut.json --output subject.png --matte alpha.png
 ```
 
 `--options` 是严格 JSON；也支持 `-` 从 stdin 读取。相对蒙版路径以 options 文件目录为基准。`--input-space`、`--color-pipeline`、`--raw-develop` 与 grade 一致，RAW 也可先显影再抠像。透明输出允许 PNG、8/16 位 TIFF、EXR；JPEG 与 32 位 TIFF 会拒绝。默认 PNG/TIFF 16 位、EXR 32 位。`--matte` 是独立的 **16 位灰度 PNG 数据**，数值直接等于最终透明度，不经过 gamma/ICC/显示转换；不能把有 gamma 的蒙版预览当作数据。所有文件单独原子写入，多个输出不是一个事务；已有文件默认不覆盖，使用 `--overwrite` 明确允许。

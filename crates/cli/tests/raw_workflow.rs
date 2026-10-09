@@ -6,7 +6,7 @@ use std::{
 #[path = "../../io/tests/support/mod.rs"]
 mod support;
 fn run(request: Value, success: bool) -> Value {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args(["run", "-"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -42,7 +42,7 @@ fn run(request: Value, success: bool) -> Value {
 fn raw_revision_history_cache_restore_and_atomic_rejection() {
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("sensor.dng");
-    let project = dir.path().join("raw.vcolor");
+    let project = dir.path().join("raw.tinge");
     std::fs::write(&input, support::dng()).unwrap();
     run(
         json!({"command":"init","input":input,"project":project}),
@@ -62,7 +62,7 @@ fn raw_revision_history_cache_restore_and_atomic_rejection() {
         original["history"][0]["recipe_hash"],
         updated["history"][1]["recipe_hash"]
     );
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .arg("serve")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -157,7 +157,7 @@ fn raw_cli_plan_one_shot_mcp_and_non_raw_rejection() {
     std::fs::write(&input, support::dng()).unwrap();
     let options = dir.path().join("raw.json");
     std::fs::write(&options, r#"{"exposure_ev":1,"white_balance":{"type":"temperature","kelvin":4500,"tint_duv":0.002}}"#).unwrap();
-    let out = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let out = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .arg("raw-plan")
         .arg(&input)
         .arg("--raw-develop")
@@ -181,7 +181,7 @@ fn raw_cli_plan_one_shot_mcp_and_non_raw_rejection() {
         true,
     );
     assert_eq!(analysis["raw_develop"]["exposure_ev"], 1.0);
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .arg("mcp")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -191,7 +191,7 @@ fn raw_cli_plan_one_shot_mcp_and_non_raw_rejection() {
     let mut stdin = child.stdin.take().unwrap();
     for msg in [
         json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}),
-        json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"vibecolor_raw_plan","arguments":{"input":input,"options":{"white_balance":{"type":"temperature","kelvin":4500,"tint_duv":0.002}},"sensor_points":[[16,16]]}}}),
+        json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"tinge_raw_plan","arguments":{"input":input,"options":{"white_balance":{"type":"temperature","kelvin":4500,"tint_duv":0.002}},"sensor_points":[[16,16]]}}}),
     ] {
         writeln!(stdin, "{msg}").unwrap();
     }
@@ -213,13 +213,13 @@ fn raw_cli_plan_one_shot_mcp_and_non_raw_rejection() {
         1664.0
     );
     let png = dir.path().join("input.png");
-    vibecolor_io::export(
-        &vibecolor_core::Frame::new(1, 1, vec![[0.2; 4]]).unwrap(),
+    tinge_io::export(
+        &tinge_core::Frame::new(1, 1, vec![[0.2; 4]]).unwrap(),
         &png,
         Default::default(),
     )
     .unwrap();
-    let project = dir.path().join("not-raw.vcolor");
+    let project = dir.path().join("not-raw.tinge");
     run(
         json!({"command":"init","input":png,"project":project,"raw_develop":{}}),
         false,

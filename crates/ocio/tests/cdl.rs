@@ -1,7 +1,5 @@
 use serde_json::{Value, json};
-use vibecolor_ocio::{
-    CdlStyle, ConfigSource, Transform, WORKING_SPACE, cdl::*, compile_with_context,
-};
+use tinge_ocio::{CdlStyle, ConfigSource, Transform, WORKING_SPACE, cdl::*, compile_with_context};
 
 #[test]
 fn all_three_cdl_formats_match_official_parameters_and_twenty_style_direction_cases() {
@@ -136,7 +134,7 @@ fn cdl_snapshots_ignore_filename_cache_and_legacy_grade_hash_has_no_new_default(
     assert_ne!(first.1, second.1);
     assert_eq!(second.0.corrections[0].saturation, 0.8);
     let old = r#"{"type":"cdl","color_space":"ACEScct","slope":[1.0,1.0,1.0],"offset":[0.0,0.0,0.0],"power":[1.0,1.0,1.0],"saturation":1.0,"style":"no_clamp","inverse":false}"#;
-    let grade: vibecolor_ocio::NodeGrade = serde_json::from_str(old).unwrap();
+    let grade: tinge_ocio::NodeGrade = serde_json::from_str(old).unwrap();
     assert_eq!(serde_json::to_string(&grade).unwrap(), old);
 }
 

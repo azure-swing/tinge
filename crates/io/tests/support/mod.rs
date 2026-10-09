@@ -12,7 +12,7 @@ pub fn dng_with(overrides: Vec<(u16, u16, u32, Vec<u8>)>, samples: Option<Vec<u1
         (258, 3, 1, short(16)),
         (259, 3, 1, short(1)),
         (262, 3, 1, short(32803)),
-        (271, 2, 10, b"VibeColor\0".to_vec()),
+        (271, 2, 10, b"tinge\0".to_vec()),
         (272, 2, 13, b"Test sensor\0\0".to_vec()),
         (273, 4, 1, long(0)),
         (274, 3, 1, short(1)),

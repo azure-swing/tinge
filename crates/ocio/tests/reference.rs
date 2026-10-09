@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use vibecolor_ocio::{ConfigSource, Transform, apply};
+use tinge_ocio::{ConfigSource, Transform, apply};
 
 #[derive(Deserialize)]
 struct Fixture {
@@ -18,7 +18,7 @@ struct Case {
 #[test]
 fn native_cpu_matches_official_python_ocio_reference() {
     let fixture: Fixture = serde_json::from_str(include_str!("fixtures/ocio-2.5.2.json")).unwrap();
-    assert_eq!(vibecolor_ocio::version().unwrap(), fixture.engine_version);
+    assert_eq!(tinge_ocio::version().unwrap(), fixture.engine_version);
     let config = ConfigSource::Builtin {
         name: fixture.config,
     };
@@ -43,13 +43,13 @@ fn native_cpu_matches_official_python_ocio_reference() {
 #[test]
 fn config_errors_are_errors_and_aliases_are_rejected() {
     assert!(
-        vibecolor_ocio::inspect(&ConfigSource::Builtin {
+        tinge_ocio::inspect(&ConfigSource::Builtin {
             name: "default".into()
         })
         .is_err()
     );
     assert!(
-        vibecolor_ocio::inspect(&ConfigSource::File {
+        tinge_ocio::inspect(&ConfigSource::File {
             path: "missing-config.ocio".into()
         })
         .is_err()

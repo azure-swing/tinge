@@ -13,7 +13,7 @@ import urllib.request
 import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
-CLI = ROOT / "target/release/vibecolor.exe"
+CLI = ROOT / "target/release/tinge.exe"
 
 
 def native(request):
@@ -42,10 +42,10 @@ def chunks(bytes_):
 
 def main():
     results = {}
-    with tempfile.TemporaryDirectory(prefix="vibecolor-web-acceptance-") as folder:
+    with tempfile.TemporaryDirectory(prefix="tinge-web-acceptance-") as folder:
         folder = Path(folder)
         source = folder / "input.png"
-        project = folder / "sample.vcolor"
+        project = folder / "sample.tinge"
         png(source)
         native({"command": "init", "input": str(source), "project": str(project)})
         native({"command": "apply", "project": str(project), "expect_revision": 0,
@@ -61,7 +61,7 @@ def main():
 
             def request(path, body=None, headers=None, expected=200):
                 data = None if body is None else json.dumps(body).encode()
-                h = {} if body is None else {"Content-Type": "application/json", "X-VibeColor": token}
+                h = {} if body is None else {"Content-Type": "application/json", "X-Tinge": token}
                 if headers:
                     h.update(headers)
                 r = urllib.request.Request(base+path, data=data, headers=h)
@@ -156,18 +156,18 @@ def main():
 
             request("api/state", headers={"Host": "foreign.test"}, expected=400)
             request("api/save", {"expect_revision": 5, "revision": 0, "name": "bad"}, headers={"Origin": "https://foreign.test"}, expected=400)
-            request("api/save", {"expect_revision": 5, "revision": 0, "name": "bad"}, headers={"X-VibeColor": "bad"}, expected=400)
-            request("image/../../sample.vcolor", expected=400)
-            request("api/run", {"command": "show", "project": "secret.vcolor"}, expected=400)
+            request("api/save", {"expect_revision": 5, "revision": 0, "name": "bad"}, headers={"X-Tinge": "bad"}, expected=400)
+            request("image/../../sample.tinge", expected=400)
+            request("api/run", {"command": "show", "project": "secret.tinge"}, expected=400)
             c = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=5)
-            c.request("POST", parsed.path+"api/save", headers={"Content-Length": str(1024*1024+1), "Content-Type": "application/json", "X-VibeColor": token})
+            c.request("POST", parsed.path+"api/save", headers={"Content-Length": str(1024*1024+1), "Content-Type": "application/json", "X-Tinge": token})
             response = c.getresponse(); assert response.status == 400; response.read(); c.close()
             results["host_origin_token_path_and_body_limits"] = True
 
             # The existing MCP tool discovers/reads annotations through the same strict Request type.
             rpc = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
                    {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
-                   {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "vibecolor_selections", "arguments": { "project": str(project)}}}]
+                   {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "tinge_selections", "arguments": { "project": str(project)}}}]
             p = subprocess.run([str(CLI), "mcp"], input="".join(json.dumps(r)+"\n" for r in rpc), text=True, encoding="utf-8", capture_output=True, timeout=30)
             assert p.returncode == 0, p.stderr
             replies = [json.loads(line) for line in p.stdout.splitlines()]

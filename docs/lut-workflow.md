@@ -5,7 +5,7 @@
 ## 读取和应用
 
 ```powershell
-$vc = '.\target\release\vibecolor.exe'
+$vc = '.\target\release\tinge.exe'
 & $vc lut-inspect looks/warm.cube
 ```
 
@@ -25,7 +25,7 @@ $vc = '.\target\release\vibecolor.exe'
 
 ```powershell
 & $vc lut-bake --recipe examples/lut-grade.json --output artifacts/grade.cube
-& $vc lut-bake --project artifacts/node-ocio-demo.vcolor --revision 1 `
+& $vc lut-bake --project artifacts/node-ocio-demo.tinge --revision 1 `
   --options examples/lut-display-options.json --output artifacts/node-ocio-baked.cube
 ```
 

@@ -7,13 +7,13 @@
 ## 启动
 
 ```powershell
-.\target\release\vibecolor.exe view portrait.vcolor
+.\target\release\tinge.exe view portrait.tinge
 # 默认自动打开系统浏览器；只监听 127.0.0.1，端口 0 自动选择空闲端口。
 
-.\target\release\vibecolor.exe view portrait.vcolor --no-open
+.\target\release\tinge.exe view portrait.tinge --no-open
 # stdout 的 viewer_ready JSON 包含 URL，可在 Codex 侧栏浏览器打开。
 
-.\target\release\vibecolor.exe view portrait.vcolor --port 6340
+.\target\release\tinge.exe view portrait.tinge --port 6340
 ```
 
 进程持续运行，Ctrl+C 停止。启动不修改项目。用户须先用 `init` 创建项目；headless 调色命令继续保持原来的行为。默认浏览器打开失败时 stderr 返回事件与 URL，服务继续可用。原生程序不会自行调用 Codex 的宿主 API；在 Codex 内直接打开该本地 URL 即可，打包插件桥接仍待完成。
@@ -47,14 +47,14 @@
 “保存圈选”原子追加到 `<project>.selections.json`，不添加调色节点、不改变项目 revision。字段包括唯一 ID、revision、source_hash、recipe_hash、output_node、全尺寸 width/height、timestamp、Mask 和可选 note。保存时再次检查项目头和基准。独立记录最多 1024 条/16 MiB；网页摘要显示最近 64 条，CLI 可读全部。项目搬迁时同时携带此文件和 `.assets`。
 
 ```powershell
-.\target\release\vibecolor.exe selections portrait.vcolor
+.\target\release\tinge.exe selections portrait.tinge
 ```
 
 CLI `run` / JSONL / MCP 同样支持：
 
 ```json
-{"command":"selections","project":"portrait.vcolor"}
-{"command":"selection_save","project":"portrait.vcolor","expect_revision":4,"revision":4,"mask":{"type":"ellipse","center":[0.5,0.4],"radius":[0.2,0.25],"rotation":0,"feather":0},"note":"天空冷一点"}
+{"command":"selections","project":"portrait.tinge"}
+{"command":"selection_save","project":"portrait.tinge","expect_revision":4,"revision":4,"mask":{"type":"ellipse","center":[0.5,0.4],"radius":[0.2,0.25],"rotation":0,"feather":0},"note":"天空冷一点"}
 ```
 
 `selection_save` 执行原生渲染以获取真实输出尺寸，记录基准后在项目锁下检查期望版本并保存。只接受几何蒙版，拒绝 bitmap 文件及颜色 qualifier；网页无需读取任意本地文件。CLI/MCP 完整字段 schema 随 Request 类型生成。
@@ -75,4 +75,4 @@ Codex 官方 [Browser 说明](https://learn.chatgpt.com/docs/browser)介绍内�
 
 `scripts/viewer-acceptance.py` 使用实际 release 进程和 HTTP 验收预览与 CLI 字节一致、ICC 标签、P3 项目的 sRGB preview view、任意修订对比、裁切后选区基准、旧修订命名/恢复、独立 CLI 更新、MCP 读取，以及并发冲突和访问边界。报告为 `artifacts/viewer-acceptance.json`。实际 Codex 浏览器另验收圈选手势、保存对话框、缩放/比较和窄侧栏/宽屏布局；这不等于物理屏幕测色验收。
 
-前端请求合并、断连/超时、重连后历史版本和未提交选区保护，由统一入口 `node --test scripts/viewer-client.test.cjs` 验证。服务端快速切换、取消过时任务、跨标签页缓存复用和队列容量由 `cargo test -p vibecolor-cli --bin vibecolor web::tests --locked` 覆盖，无需依赖运行中的查看器日志或固定项目版本。
+前端请求合并、断连/超时、重连后历史版本和未提交选区保护，由统一入口 `node --test scripts/viewer-client.test.cjs` 验证。服务端快速切换、取消过时任务、跨标签页缓存复用和队列容量由 `cargo test -p tinge-cli --bin tinge web::tests --locked` 覆盖，无需依赖运行中的查看器日志或固定项目版本。

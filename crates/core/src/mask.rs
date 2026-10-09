@@ -4,7 +4,7 @@ use rayon::prelude::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
-use vibecolor_color::{luminance, rgb_to_hsv, to_display};
+use tinge_color::{luminance, rgb_to_hsv, to_display};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]

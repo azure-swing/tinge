@@ -1,5 +1,5 @@
 #![cfg(feature = "raw")]
-use vibecolor_io::{load, raw};
+use tinge_io::{load, raw};
 
 /// A real, uncompressed 12-bit Bayer DNG container generated from known sensor values.
 /// Tests decoding and linear development without depending on a camera/photo license.
@@ -8,7 +8,7 @@ use support::{dng, dng_with};
 
 #[test]
 fn raw_controls_sensor_levels_wb_exposure_and_hdr() {
-    use vibecolor_io::{RawDevelopOptions, RawWhiteBalance, SensorLevels};
+    use tinge_io::{RawDevelopOptions, RawWhiteBalance, SensorLevels};
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("sensor.dng");
     std::fs::write(&input, dng()).unwrap();
@@ -54,7 +54,7 @@ fn raw_controls_sensor_levels_wb_exposure_and_hdr() {
 }
 #[test]
 fn raw_controls_monochrome_negative_crop_and_orientation() {
-    use vibecolor_io::{BelowBlack, RawCrop, RawDevelopOptions, SensorLevels};
+    use tinge_io::{BelowBlack, RawCrop, RawDevelopOptions, SensorLevels};
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("mono.dng");
     let long = |v: u32| v.to_le_bytes().to_vec();
@@ -99,7 +99,7 @@ fn raw_controls_monochrome_negative_crop_and_orientation() {
 }
 #[test]
 fn raw_controls_reject_invalid_sensor_interpretations() {
-    use vibecolor_io::{RawDevelopOptions, RawWhiteBalance, SensorLevels};
+    use tinge_io::{RawDevelopOptions, RawWhiteBalance, SensorLevels};
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("sensor.dng");
     std::fs::write(&input, dng()).unwrap();
@@ -155,7 +155,7 @@ fn raw_controls_reject_invalid_sensor_interpretations() {
 
 #[test]
 fn raw_temperature_resolves_xy_and_develops_the_same_camera_gains() {
-    use vibecolor_io::{RawDevelopOptions, RawWhiteBalance};
+    use tinge_io::{RawDevelopOptions, RawWhiteBalance};
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("temperature.dng");
     std::fs::write(&input, dng()).unwrap();
@@ -207,7 +207,7 @@ fn illuminant_a_camera_matrix_consumes_adapted_d65_xyz() {
         ),
     )
     .unwrap();
-    let options = vibecolor_io::RawDevelopOptions {
+    let options = tinge_io::RawDevelopOptions {
         calibration_illuminant: Some(17),
         ..Default::default()
     };
@@ -277,7 +277,7 @@ fn raw_bayer_dng_decode_develop_and_export() {
     std::fs::write(&input, dng()).unwrap();
     let (info, meta) = raw::inspect(&input).unwrap();
     assert_eq!(info.width, 32);
-    assert_eq!(meta.make, "VibeColor");
+    assert_eq!(meta.make, "tinge");
     let f = load(&input, None).unwrap();
     assert_eq!((f.width, f.height), (32, 32));
     let p = f.pixels[16 * 32 + 16];
@@ -288,14 +288,14 @@ fn raw_bayer_dng_decode_develop_and_export() {
         "{p:?} expected {expected:?}"
     );
     let out = dir.path().join("developed.exr");
-    vibecolor_io::export(
+    tinge_io::export(
         &f,
         &out,
-        vibecolor_io::ExportOptions {
+        tinge_io::ExportOptions {
             bit_depth: 32,
-            space: vibecolor_color::ColorSpace {
-                primaries: vibecolor_color::Primaries::Srgb,
-                transfer: vibecolor_color::Transfer::Linear,
+            space: tinge_color::ColorSpace {
+                primaries: tinge_color::Primaries::Srgb,
+                transfer: tinge_color::Transfer::Linear,
             },
             ..Default::default()
         },

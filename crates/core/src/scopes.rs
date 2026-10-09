@@ -1,6 +1,6 @@
 use crate::Frame;
 use serde::Serialize;
-use vibecolor_color::{luminance, to_display};
+use tinge_color::{luminance, to_display};
 
 #[derive(Debug, Serialize)]
 pub struct Analysis {

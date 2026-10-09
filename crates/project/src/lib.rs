@@ -8,8 +8,8 @@ use std::{
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
-use vibecolor_color::ColorSpace;
-use vibecolor_core::{Mask, Node, Operation, Recipe};
+use tinge_color::ColorSpace;
+use tinge_core::{Mask, Node, Operation, Recipe};
 pub mod selections;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,9 +28,9 @@ pub struct Revision {
     pub label: String,
     pub recipe: Recipe,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub color_pipeline: Option<vibecolor_ocio::Pipeline>,
+    pub color_pipeline: Option<tinge_ocio::Pipeline>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub raw_develop: Option<vibecolor_io::RawDevelopOptions>,
+    pub raw_develop: Option<tinge_io::RawDevelopOptions>,
     pub engine_version: String,
     pub recipe_hash: String,
 }
@@ -68,10 +68,10 @@ pub enum Edit {
         recipe: Recipe,
     },
     SetColorPipeline {
-        pipeline: Option<vibecolor_ocio::Pipeline>,
+        pipeline: Option<tinge_ocio::Pipeline>,
     },
     SetRawDevelop {
-        options: Option<vibecolor_io::RawDevelopOptions>,
+        options: Option<tinge_io::RawDevelopOptions>,
     },
 }
 #[derive(Debug)]
@@ -144,12 +144,12 @@ fn freeze(path: &Path, source: &Path) -> Result<String> {
     let dir = asset_dir(path);
     fs::create_dir_all(&dir)?;
     let hash =
-        vibecolor_io::hash_file(source).with_context(|| format!("asset {}", source.display()))?;
+        tinge_io::hash_file(source).with_context(|| format!("asset {}", source.display()))?;
     let ext = source.extension().and_then(|s| s.to_str()).unwrap_or("bin");
     let dest = dir.join(format!("{hash}.{ext}"));
     if dest.exists() {
         ensure!(
-            vibecolor_io::hash_file(&dest)? == hash,
+            tinge_io::hash_file(&dest)? == hash,
             "stored asset hash mismatch"
         );
     } else {
@@ -158,10 +158,10 @@ fn freeze(path: &Path, source: &Path) -> Result<String> {
             blake3::hash(&bytes).to_hex().as_str() == hash,
             "asset changed during import"
         );
-        match vibecolor_io::atomic_bytes(&dest, &bytes, false) {
+        match tinge_io::atomic_bytes(&dest, &bytes, false) {
             Ok(()) => {}
             Err(e) => {
-                if !dest.exists() || vibecolor_io::hash_file(&dest)? != hash {
+                if !dest.exists() || tinge_io::hash_file(&dest)? != hash {
                     return Err(e);
                 }
             }
@@ -202,10 +202,10 @@ fn freeze_recipe(recipe: &mut Recipe, project: &Path, origin: &Path) -> Result<(
 /// No project JSON is created; the caller owns the temporary directory lifetime.
 pub fn snapshot_recipe(
     mut recipe: Recipe,
-    pipeline: Option<vibecolor_ocio::Pipeline>,
+    pipeline: Option<tinge_ocio::Pipeline>,
     destination: &Path,
     origin: &Path,
-) -> Result<(Recipe, Option<vibecolor_ocio::Pipeline>)> {
+) -> Result<(Recipe, Option<tinge_ocio::Pipeline>)> {
     recipe.validate()?;
     freeze_recipe(&mut recipe, destination, origin)?;
     let pipeline = pipeline
@@ -216,11 +216,11 @@ pub fn snapshot_recipe(
     Ok((recipe, pipeline))
 }
 fn freeze_pipeline(
-    mut pipeline: vibecolor_ocio::Pipeline,
+    mut pipeline: tinge_ocio::Pipeline,
     project: &Path,
     origin: &Path,
-) -> Result<vibecolor_ocio::Pipeline> {
-    use vibecolor_ocio::{ConfigSource, PipelineConfig};
+) -> Result<tinge_ocio::Pipeline> {
+    use tinge_ocio::{ConfigSource, PipelineConfig};
     if let PipelineConfig::Source(
         source @ (ConfigSource::File { .. } | ConfigSource::Frozen { .. }),
     ) = &pipeline.config
@@ -232,7 +232,7 @@ fn freeze_pipeline(
                 } else {
                     origin.join(path)
                 };
-                vibecolor_ocio::archive_file(&source)?
+                tinge_ocio::archive_file(&source)?
             }
             ConfigSource::Frozen { path, hash } => {
                 let source = if path.is_absolute() {
@@ -241,7 +241,7 @@ fn freeze_pipeline(
                     base(project).join(path)
                 };
                 ensure!(
-                    vibecolor_io::hash_file(&source)? == *hash,
+                    tinge_io::hash_file(&source)? == *hash,
                     "incoming OCIO package hash mismatch"
                 );
                 let bytes = fs::read(source)?;
@@ -258,11 +258,11 @@ fn freeze_pipeline(
         fs::create_dir_all(asset_dir(project))?;
         if dest.exists() {
             ensure!(
-                vibecolor_io::hash_file(&dest)? == hash,
+                tinge_io::hash_file(&dest)? == hash,
                 "stored OCIO archive hash mismatch"
             );
         } else {
-            vibecolor_io::atomic_bytes(&dest, &bytes, false)?;
+            tinge_io::atomic_bytes(&dest, &bytes, false)?;
         }
         let relative = dest.strip_prefix(base(project)).unwrap_or(&dest);
         pipeline.config = PipelineConfig::Source(ConfigSource::Frozen {
@@ -281,8 +281,8 @@ fn stamp() -> u64 {
 }
 fn revision_hash(
     recipe: &Recipe,
-    pipeline: Option<&vibecolor_ocio::Pipeline>,
-    raw: Option<&vibecolor_io::RawDevelopOptions>,
+    pipeline: Option<&tinge_ocio::Pipeline>,
+    raw: Option<&tinge_io::RawDevelopOptions>,
 ) -> Result<String> {
     // Preserve existing schema-v1 hashes when no pipeline is selected.
     let bytes = if let Some(raw) = raw {
@@ -298,8 +298,8 @@ fn revision_hash(
 /// Even disabled/unreachable nodes must reference a valid, reproducible processor.
 pub fn compile_color_nodes(
     recipe: &Recipe,
-    pipeline: Option<&vibecolor_ocio::Pipeline>,
-) -> Result<BTreeMap<String, vibecolor_ocio::CompiledTransform>> {
+    pipeline: Option<&tinge_ocio::Pipeline>,
+) -> Result<BTreeMap<String, tinge_ocio::CompiledTransform>> {
     let mut processors = BTreeMap::new();
     if recipe
         .nodes
@@ -326,8 +326,8 @@ fn revision(
     parent: Option<u64>,
     label: String,
     recipe: Recipe,
-    color_pipeline: Option<vibecolor_ocio::Pipeline>,
-    raw_develop: Option<vibecolor_io::RawDevelopOptions>,
+    color_pipeline: Option<tinge_ocio::Pipeline>,
+    raw_develop: Option<tinge_io::RawDevelopOptions>,
 ) -> Result<Revision> {
     let recipe_hash = revision_hash(&recipe, color_pipeline.as_ref(), raw_develop.as_ref())?;
     Ok(Revision {
@@ -405,8 +405,8 @@ impl Project {
         &mut self,
         label: String,
         recipe: Recipe,
-        pipeline: Option<vibecolor_ocio::Pipeline>,
-        raw: Option<vibecolor_io::RawDevelopOptions>,
+        pipeline: Option<tinge_ocio::Pipeline>,
+        raw: Option<tinge_io::RawDevelopOptions>,
     ) -> Result<u64> {
         recipe.validate()?;
         let id = self.history.last().context("empty history")?.id + 1;
@@ -444,7 +444,7 @@ fn read(path: &Path) -> Result<Project> {
 }
 fn save(path: &Path, p: &Project, overwrite: bool) -> Result<()> {
     p.validate()?;
-    vibecolor_io::atomic_bytes(path, &serde_json::to_vec(p)?, overwrite)
+    tinge_io::atomic_bytes(path, &serde_json::to_vec(p)?, overwrite)
 }
 pub fn init(path: &Path, input: &Path, space: Option<ColorSpace>) -> Result<Project> {
     init_with_pipeline(path, input, space, None)
@@ -453,19 +453,18 @@ pub fn init(path: &Path, input: &Path, space: Option<ColorSpace>) -> Result<Proj
 pub fn validate_source_options(
     input: &Path,
     space: Option<ColorSpace>,
-    pipeline: Option<&vibecolor_ocio::Pipeline>,
-    raw: Option<&vibecolor_io::RawDevelopOptions>,
+    pipeline: Option<&tinge_ocio::Pipeline>,
+    raw: Option<&tinge_io::RawDevelopOptions>,
 ) -> Result<()> {
     if let Some(raw) = raw {
         raw.validate()?;
         ensure!(
-            vibecolor_io::raw::is_raw(input),
+            tinge_io::raw::is_raw(input),
             "RAW controls require a RAW source"
         );
         ensure!(space.is_none(), "RAW controls conflict with input_space");
         ensure!(
-            !pipeline
-                .is_some_and(|p| matches!(p.input, vibecolor_ocio::InputEncoding::Encoded { .. })),
+            !pipeline.is_some_and(|p| matches!(p.input, tinge_ocio::InputEncoding::Encoded { .. })),
             "RAW controls conflict with OCIO encoded input"
         );
     }
@@ -474,19 +473,19 @@ pub fn validate_source_options(
 fn load_managed_source(
     input: &Path,
     space: Option<ColorSpace>,
-    raw: Option<&vibecolor_io::RawDevelopOptions>,
-) -> Result<vibecolor_core::Frame> {
+    raw: Option<&tinge_io::RawDevelopOptions>,
+) -> Result<tinge_core::Frame> {
     if let Some(raw) = raw {
-        vibecolor_io::raw::load_with_options(input, raw)
+        tinge_io::raw::load_with_options(input, raw)
     } else {
-        vibecolor_io::load(input, space)
+        tinge_io::load(input, space)
     }
 }
 pub fn init_with_pipeline(
     path: &Path,
     input: &Path,
     space: Option<ColorSpace>,
-    pipeline: Option<vibecolor_ocio::Pipeline>,
+    pipeline: Option<tinge_ocio::Pipeline>,
 ) -> Result<Project> {
     init_with_source_options(path, input, space, pipeline, None)
 }
@@ -494,8 +493,8 @@ pub fn init_with_source_options(
     path: &Path,
     input: &Path,
     space: Option<ColorSpace>,
-    pipeline: Option<vibecolor_ocio::Pipeline>,
-    raw_develop: Option<vibecolor_io::RawDevelopOptions>,
+    pipeline: Option<tinge_ocio::Pipeline>,
+    raw_develop: Option<tinge_io::RawDevelopOptions>,
 ) -> Result<Project> {
     let _lock = lock(path)?;
     ensure!(!path.exists(), "project already exists");
@@ -505,7 +504,7 @@ pub fn init_with_source_options(
     validate_source_options(input, space, pipeline.as_ref(), raw_develop.as_ref())?;
     let frozen = freeze(path, input)?;
     let source = Source {
-        hash: vibecolor_io::hash_file(&resolve(base(path), &frozen))?,
+        hash: tinge_io::hash_file(&resolve(base(path), &frozen))?,
         path: frozen,
         color_space: space,
     };
@@ -514,15 +513,12 @@ pub fn init_with_source_options(
     if let Some(pipeline) = &pipeline {
         let pipeline = pipeline.resolved_at(base(path));
         pipeline.validate()?;
-        if matches!(
-            pipeline.input,
-            vibecolor_ocio::InputEncoding::Encoded { .. }
-        ) {
+        if matches!(pipeline.input, tinge_ocio::InputEncoding::Encoded { .. }) {
             ensure!(
                 space.is_none(),
                 "input_space and OCIO encoded input are mutually exclusive"
             );
-            let mut image = vibecolor_io::load_signal(input)?;
+            let mut image = tinge_io::load_signal(input)?;
             pipeline.to_working(&mut image.pixels)?;
         } else {
             load_managed_source(input, space, raw_develop.as_ref())?;
@@ -575,13 +571,13 @@ pub fn transaction(
                 if let Some(next) = &next {
                     let next = next.resolved_at(base(path));
                     next.validate()?;
-                    if matches!(next.input, vibecolor_ocio::InputEncoding::Encoded { .. }) {
+                    if matches!(next.input, tinge_ocio::InputEncoding::Encoded { .. }) {
                         ensure!(
                             p.source.color_space.is_none(),
                             "explicit input_space conflicts with OCIO encoded input"
                         );
                         let mut samples =
-                            vibecolor_io::load_signal(&resolve(base(path), &p.source.path))?;
+                            tinge_io::load_signal(&resolve(base(path), &p.source.path))?;
                         next.to_working(&mut samples.pixels)?;
                     }
                 }
@@ -633,12 +629,12 @@ pub fn transaction(
     )?;
     if raw_changed {
         ensure!(
-            vibecolor_io::hash_file(&source)? == p.source.hash,
+            tinge_io::hash_file(&source)? == p.source.hash,
             "source image hash mismatch; source has changed"
         );
         if let Some(options) = &raw_develop {
             // Metadata validation alone cannot detect overflow from extreme levels.
-            vibecolor_io::raw::load_with_options(&source, options)?;
+            tinge_io::raw::load_with_options(&source, options)?;
         }
     }
     p.commit(label, recipe, pipeline, raw_develop)?;
@@ -712,10 +708,10 @@ mod tests {
     fn pipeline_is_revisioned_hashed_and_restored_with_branches() {
         let d = tempfile::tempdir().unwrap();
         let input = d.path().join("input.png");
-        let path = d.path().join("pipeline.vcolor");
-        let frame = vibecolor_core::Frame::new(1, 1, vec![[0.18, 0.18, 0.18, 1.0]]).unwrap();
-        vibecolor_io::export(&frame, &input, Default::default()).unwrap();
-        let pipeline: vibecolor_ocio::Pipeline =
+        let path = d.path().join("pipeline.tinge");
+        let frame = tinge_core::Frame::new(1, 1, vec![[0.18, 0.18, 0.18, 1.0]]).unwrap();
+        tinge_io::export(&frame, &input, Default::default()).unwrap();
+        let pipeline: tinge_ocio::Pipeline =
             serde_json::from_str(include_str!("../../../examples/aces2-srgb.json")).unwrap();
         let original = init_with_pipeline(&path, &input, None, Some(pipeline)).unwrap();
         let original_hash = original.head().unwrap().recipe_hash.clone();
@@ -763,9 +759,9 @@ mod tests {
     fn concurrent_same_revision_has_one_winner() {
         let d = tempfile::tempdir().unwrap();
         let input = d.path().join("input.png");
-        let path = d.path().join("race.vcolor");
-        let f = vibecolor_core::Frame::new(1, 1, vec![[0.2, 0.2, 0.2, 1.0]]).unwrap();
-        vibecolor_io::export(&f, &input, Default::default()).unwrap();
+        let path = d.path().join("race.tinge");
+        let f = tinge_core::Frame::new(1, 1, vec![[0.2, 0.2, 0.2, 1.0]]).unwrap();
+        tinge_io::export(&f, &input, Default::default()).unwrap();
         init(&path, &input, None).unwrap();
         let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
         let mut handles = Vec::new();
@@ -802,9 +798,9 @@ mod tests {
     fn transaction_conflict_atomic_failure_restore_and_portable_source() {
         let d = tempfile::tempdir().unwrap();
         let input = d.path().join("input.png");
-        let path = d.path().join("p.vcolor");
-        let f = vibecolor_core::Frame::new(1, 1, vec![[0.2, 0.4, 0.6, 1.0]]).unwrap();
-        vibecolor_io::export(&f, &input, Default::default()).unwrap();
+        let path = d.path().join("p.tinge");
+        let f = tinge_core::Frame::new(1, 1, vec![[0.2, 0.4, 0.6, 1.0]]).unwrap();
+        tinge_io::export(&f, &input, Default::default()).unwrap();
         init(&path, &input, None).unwrap();
         fs::remove_file(input).unwrap();
         let before = fs::read(&path).unwrap();

@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use vibecolor_core::{
+use tinge_core::{
     Operation,
     lut::{CubeLut, LutInterpolation},
 };

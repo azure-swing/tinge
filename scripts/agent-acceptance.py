@@ -55,7 +55,8 @@ class MCP:
                 self.responses.put(json.loads(line))
             self.responses.put(None)
         threading.Thread(target=reader, daemon=True).start()
-        self.rpc('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {}, 'clientInfo': {'name': 'agent-acceptance', 'version': '1'}})
+        initialized = self.rpc('initialize', {'protocolVersion': '2025-11-25', 'capabilities': {}, 'clientInfo': {'name': 'agent-acceptance', 'version': '1'}})
+        assert initialized['serverInfo']['name'] == 'tinge', initialized
 
     def rpc(self, method, params=None):
         self.serial += 1
@@ -82,7 +83,7 @@ class MCP:
         if full:
             request['_response'] = 'full'
             request['_inline_image'] = True
-        response = self.rpc('tools/call', {'name': 'vibecolor_' + command, 'arguments': request})
+        response = self.rpc('tools/call', {'name': 'tinge_' + command, 'arguments': request})
         assert allow_error or not response.get('isError'), response
         return response
 
@@ -113,9 +114,9 @@ def main():
     report = {'executable': str(args.executable.resolve()), 'binary_bytes': args.executable.stat().st_size}
     mcp = MCP(args.executable.resolve())
     try:
-        with tempfile.TemporaryDirectory(prefix='vibecolor-agent-') as root:
+        with tempfile.TemporaryDirectory(prefix='tinge-agent-') as root:
             root = Path(root)
-            source, project = root / 'source.png', root / 'test.vcolor'
+            source, project = root / 'source.png', root / 'test.tinge'
             png(source)
             mcp.data({'command': 'init', 'input': str(source), 'project': str(project)})
             tools = mcp.rpc('tools/list')
@@ -123,9 +124,9 @@ def main():
             report['preview_schema_bytes'] = len(json.dumps(mcp.data({'command': 'schema', 'target': 'preview'}), separators=(',', ':')).encode())
             report['idle_working_set_bytes'] = working_set(mcp.proc.pid)
             names = {t['name'] for t in tools['tools']}
-            assert 'vibecolor_agent' not in names and 'vibecolor_run' not in names
-            assert 'vibecolor_job_submit' not in names and 'vibecolor_batch' not in names
-            assert 'vibecolor_submit_edit_preview' in names
+            assert 'tinge_agent' not in names and 'tinge_run' not in names
+            assert 'tinge_job_submit' not in names and 'tinge_batch' not in names
+            assert 'tinge_submit_edit_preview' in names
             for tool in tools['tools']:
                 assert tool['inputSchema']['additionalProperties'] is False
                 assert 'command' not in tool['inputSchema']['properties']

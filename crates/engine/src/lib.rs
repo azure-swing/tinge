@@ -10,8 +10,8 @@ use std::{
     },
     time::Instant,
 };
-use vibecolor_core::{Frame, Recipe, lut::CubeLut, ops};
-use vibecolor_project::{Project, base, resolve};
+use tinge_core::{Frame, Recipe, lut::CubeLut, ops};
+use tinge_project::{Project, base, resolve};
 pub mod bake;
 
 pub struct Engine {
@@ -31,11 +31,11 @@ pub struct Progress {
     pub cached: bool,
     pub elapsed_ms: u128,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ocio_transform: Option<vibecolor_ocio::TransformReport>,
+    pub ocio_transform: Option<tinge_ocio::TransformReport>,
 }
 pub struct RenderContext<'a> {
     pub asset_base: &'a Path,
-    pub color_pipeline: Option<&'a vibecolor_ocio::Pipeline>,
+    pub color_pipeline: Option<&'a tinge_ocio::Pipeline>,
 }
 impl Engine {
     pub fn new() -> Self {
@@ -119,7 +119,7 @@ impl Engine {
         progress: &mut impl FnMut(Progress),
     ) -> Result<Arc<Frame>> {
         let order = recipe.validate()?;
-        let processors = vibecolor_project::compile_color_nodes(recipe, context.color_pipeline)?;
+        let processors = tinge_project::compile_color_nodes(recipe, context.color_pipeline)?;
         let dir = context.asset_base;
         let start = Instant::now();
         let source_hash = hash_frame(&source, cancel)?;
@@ -175,10 +175,10 @@ impl Engine {
             }
             // Hash external LUT/matte content into cache identity on every request.
             let mut assets = Vec::new();
-            if let vibecolor_core::Operation::Lut { path, .. } = &node.op {
+            if let tinge_core::Operation::Lut { path, .. } = &node.op {
                 assets.push(path.clone());
             }
-            if let vibecolor_core::Operation::Cutout { options } = &node.op {
+            if let tinge_core::Operation::Cutout { options } = &node.op {
                 assets.extend(options.assets());
             }
             let mask = node.mask.as_ref().and_then(|m| recipe.masks.get(m));
@@ -187,7 +187,7 @@ impl Engine {
                 mask_assets(mask, &mut assets);
             }
             for path in assets {
-                hasher.update(vibecolor_io::hash_file(&resolve(dir, &path))?.as_bytes());
+                hasher.update(tinge_io::hash_file(&resolve(dir, &path))?.as_bytes());
             }
             let key = hasher.finalize().to_hex().to_string();
             let cached = self.cache.contains_key(&key);
@@ -196,11 +196,11 @@ impl Engine {
             } else {
                 let mut out = if !node.enabled {
                     (*refs[0]).clone()
-                } else if let vibecolor_core::Operation::Cutout { options } = &node.op {
-                    vibecolor_core::cutout::run(
+                } else if let tinge_core::Operation::Cutout { options } = &node.op {
+                    tinge_core::cutout::run(
                         refs[0],
                         options,
-                        &|path, w, h| vibecolor_io::load_matte(&resolve(dir, path), w, h),
+                        &|path, w, h| tinge_io::load_matte(&resolve(dir, path), w, h),
                         cancel,
                     )?
                     .0
@@ -227,7 +227,7 @@ impl Engine {
                         .map(|m| {
                             m.rasterize_cancellable(
                                 refs[0],
-                                &|path, w, h| vibecolor_io::load_matte(&resolve(dir, path), w, h),
+                                &|path, w, h| tinge_io::load_matte(&resolve(dir, path), w, h),
                                 cancel,
                             )
                         })
@@ -346,7 +346,7 @@ impl Engine {
         }
         let input = resolve(base(path), &p.source.path);
         ensure!(
-            vibecolor_io::hash_file(&input)? == p.source.hash,
+            tinge_io::hash_file(&input)? == p.source.hash,
             "source image hash mismatch; source has changed"
         );
         let decode_key = format!(
@@ -375,10 +375,10 @@ impl Engine {
 pub fn verify_recipe_assets(recipe: &Recipe, dir: &Path) -> Result<()> {
     let mut assets = Vec::new();
     for n in &recipe.nodes {
-        if let vibecolor_core::Operation::Lut { path, .. } = &n.op {
+        if let tinge_core::Operation::Lut { path, .. } = &n.op {
             assets.push(path.clone());
         }
-        if let vibecolor_core::Operation::Cutout { options } = &n.op {
+        if let tinge_core::Operation::Cutout { options } = &n.op {
             assets.extend(options.assets());
         }
     }
@@ -392,7 +392,7 @@ pub fn verify_recipe_assets(recipe: &Recipe, dir: &Path) -> Result<()> {
             .and_then(|p| p.to_str())
             .context("invalid asset name")?;
         ensure!(
-            vibecolor_io::hash_file(&file)? == expected,
+            tinge_io::hash_file(&file)? == expected,
             "immutable project asset was modified: {asset}"
         );
     }
@@ -401,37 +401,34 @@ pub fn verify_recipe_assets(recipe: &Recipe, dir: &Path) -> Result<()> {
 /// Decode explicitly typed source values into the canonical scene-linear Frame.
 pub fn load_source(
     path: &Path,
-    space: Option<vibecolor_color::ColorSpace>,
-    pipeline: Option<&vibecolor_ocio::Pipeline>,
+    space: Option<tinge_color::ColorSpace>,
+    pipeline: Option<&tinge_ocio::Pipeline>,
 ) -> Result<Frame> {
     load_source_with_options(path, space, pipeline, None)
 }
 pub fn load_source_with_options(
     path: &Path,
-    space: Option<vibecolor_color::ColorSpace>,
-    pipeline: Option<&vibecolor_ocio::Pipeline>,
-    raw: Option<&vibecolor_io::RawDevelopOptions>,
+    space: Option<tinge_color::ColorSpace>,
+    pipeline: Option<&tinge_ocio::Pipeline>,
+    raw: Option<&tinge_io::RawDevelopOptions>,
 ) -> Result<Frame> {
-    vibecolor_project::validate_source_options(path, space, pipeline, raw)?;
+    tinge_project::validate_source_options(path, space, pipeline, raw)?;
     if let Some(pipeline) = pipeline {
         pipeline.validate()?;
-        if matches!(
-            pipeline.input,
-            vibecolor_ocio::InputEncoding::Encoded { .. }
-        ) {
+        if matches!(pipeline.input, tinge_ocio::InputEncoding::Encoded { .. }) {
             ensure!(
                 space.is_none(),
                 "input_space and OCIO encoded input are mutually exclusive"
             );
-            let mut image = vibecolor_io::load_signal(path)?;
+            let mut image = tinge_io::load_signal(path)?;
             pipeline.to_working(&mut image.pixels)?;
             return Frame::new(image.width, image.height, image.pixels);
         }
     }
     if let Some(raw) = raw {
-        vibecolor_io::raw::load_with_options(path, raw)
+        tinge_io::raw::load_with_options(path, raw)
     } else {
-        vibecolor_io::load(path, space)
+        tinge_io::load(path, space)
     }
 }
 
@@ -439,12 +436,9 @@ pub fn load_source_with_options(
 pub fn export_frame(
     frame: &Frame,
     path: &Path,
-    options: vibecolor_io::ExportOptions,
-    pipeline: Option<&vibecolor_ocio::Pipeline>,
-) -> Result<(
-    vibecolor_io::ExportReport,
-    Option<vibecolor_ocio::TransformReport>,
-)> {
+    options: tinge_io::ExportOptions,
+    pipeline: Option<&tinge_ocio::Pipeline>,
+) -> Result<(tinge_io::ExportReport, Option<tinge_ocio::TransformReport>)> {
     if let Some(pipeline) = pipeline {
         pipeline.validate()?;
         if options.bit_depth != 32 {
@@ -452,42 +446,42 @@ pub fn export_frame(
                 options.space == pipeline.display.color_space(),
                 "output_space must match the OCIO display encoding; select the display in color_pipeline"
             );
-            let mut signal = vibecolor_io::SignalImage {
+            let mut signal = tinge_io::SignalImage {
                 width: frame.width,
                 height: frame.height,
                 pixels: frame.pixels.clone(),
             };
             let transform = pipeline.to_display(&mut signal.pixels)?;
             return Ok((
-                vibecolor_io::export_signal(&signal, path, options)?,
+                tinge_io::export_signal(&signal, path, options)?,
                 Some(transform),
             ));
         }
     }
-    Ok((vibecolor_io::export(frame, path, options)?, None))
+    Ok((tinge_io::export(frame, path, options)?, None))
 }
 pub fn preview_png_bytes(
     frame: &Frame,
-    pipeline: Option<&vibecolor_ocio::Pipeline>,
+    pipeline: Option<&tinge_ocio::Pipeline>,
 ) -> Result<(
     Vec<u8>,
-    vibecolor_io::ExportReport,
-    Option<vibecolor_ocio::TransformReport>,
+    tinge_io::ExportReport,
+    Option<tinge_ocio::TransformReport>,
 )> {
     if let Some(pipeline) = pipeline {
         pipeline.validate()?;
         ensure!(
-            pipeline.display.color_space() == vibecolor_color::ColorSpace::default(),
+            pipeline.display.color_space() == tinge_color::ColorSpace::default(),
             "memory preview requires sRGB SDR"
         );
         let mut pixels = frame.pixels.clone();
         let transform = pipeline.to_display(&mut pixels)?;
         let (bytes, report) =
-            vibecolor_io::preview_png_bytes(frame.width, frame.height, &pixels, false)?;
+            tinge_io::preview_png_bytes(frame.width, frame.height, &pixels, false)?;
         return Ok((bytes, report, Some(transform)));
     }
     let (bytes, report) =
-        vibecolor_io::preview_png_bytes(frame.width, frame.height, &frame.pixels, true)?;
+        tinge_io::preview_png_bytes(frame.width, frame.height, &frame.pixels, true)?;
     Ok((bytes, report, None))
 }
 fn hash_frame(f: &Frame, cancel: &AtomicBool) -> Result<String> {
@@ -507,8 +501,8 @@ fn hash_frame(f: &Frame, cancel: &AtomicBool) -> Result<String> {
     }
     Ok(h.finalize().to_hex().to_string())
 }
-fn mask_assets(mask: &vibecolor_core::Mask, paths: &mut Vec<String>) {
-    use vibecolor_core::Mask;
+fn mask_assets(mask: &tinge_core::Mask, paths: &mut Vec<String>) {
+    use tinge_core::Mask;
     match mask {
         Mask::Bitmap { path } => paths.push(path.clone()),
         Mask::Combine { masks, .. } => {
@@ -577,7 +571,7 @@ mod tests {
                      {"id":"linear_ev","inputs":["cdl"],"op":{"type":"exposure","stops":1}}],
             "output":"linear_ev","masks":{"ramp":{"type":"linear_gradient","start":[0,0.5],"end":[1,0.5]}}
         })).unwrap();
-        let pipeline: vibecolor_ocio::Pipeline =
+        let pipeline: tinge_ocio::Pipeline =
             serde_json::from_str(include_str!("../../../examples/aces2-srgb.json")).unwrap();
         let source = Arc::new(Frame::new(input.len() as u32, 1, input.clone()).unwrap());
         let mut engine = Engine::new();
@@ -634,7 +628,7 @@ mod tests {
         // An AP1/D60 anchor must return the same canonical scene result.
         let mut ap1 = pipeline.clone();
         ap1.working_space = "ACEScg".into();
-        ap1.working_encoding.primaries = vibecolor_color::Primaries::AcesCg;
+        ap1.working_encoding.primaries = tinge_color::Primaries::AcesCg;
         let alternate = engine
             .render_with_context(
                 source.clone(),
@@ -676,7 +670,7 @@ mod tests {
         std::fs::create_dir_all(&lut_dir).unwrap();
         let lut = lut_dir.join("look.cube");
         std::fs::write(&lut, "LUT_1D_SIZE 2\n0 0 0\n1 1 1\n").unwrap();
-        let pipeline: vibecolor_ocio::Pipeline = serde_json::from_value(serde_json::json!({
+        let pipeline: tinge_ocio::Pipeline = serde_json::from_value(serde_json::json!({
             "config":{"type":"file","path":config},"working_space":"linear","display_name":"Photo sRGB","view":"Standard"
         })).unwrap();
         let recipe: Recipe = serde_json::from_value(serde_json::json!({"nodes":[{"id":"look","op":{"type":"ocio_grade","grade":{"type":"look","looks":"ContextGrade"}}}],"output":"look"})).unwrap();

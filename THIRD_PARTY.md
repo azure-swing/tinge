@@ -1,8 +1,8 @@
 # Third-party components
 
-VibeColor's own source is MIT licensed. Dependency versions are pinned in Cargo.lock.
+Tinge's own source is MIT licensed. Dependency versions are pinned in Cargo.lock.
 
-- rawler 0.8: LGPL-2.1, [DNGLab source](https://github.com/dnglab/dnglab), Daniel Vogelbacher and contributors. Used for camera RAW decoding, sensor scaling/demosaicing, and camera metadata. Source is unmodified. The `raw` feature in vibecolor-io enables it by default; building/distributing a combined binary must meet the dependency's LGPL terms, including the relevant source and relinking rights. The complete Cargo sources and lockfile allow rebuilding and replacing this dependency.
+- rawler 0.8: LGPL-2.1, [DNGLab source](https://github.com/dnglab/dnglab), Daniel Vogelbacher and contributors. Used for camera RAW decoding, sensor scaling/demosaicing, and camera metadata. Source is unmodified. The `raw` feature in tinge-io enables it by default; building/distributing a combined binary must meet the dependency's LGPL terms, including the relevant source and relinking rights. The complete Cargo sources and lockfile allow rebuilding and replacing this dependency.
 - moxcms 0.8: BSD-3-Clause OR Apache-2.0, [source](https://github.com/awxkee/moxcms), Radzivon Bartoshyk and contributors. Used for actual ICC profile parsing, transforms, and encoding.
 - ocio-rs / ocio-sys 0.2.1: BSD-3-Clause, [binding source](https://github.com/shaloong/ocio-rs). Bundled feature builds the packaged OpenColorIO 2.5.2 C++ source and links it statically. OpenColorIO is BSD-3-Clause, [upstream](https://github.com/AcademySoftwareFoundation/OpenColorIO). Native dependencies include Expat, yaml-cpp, Imath, pystring, minizip-ng and zlib with their own licenses. Distribution must include the exact native library and builtin ACES configuration notices as well as Rust crate licenses.
 - image, png, tiff, exr and their dependencies: format codecs; see the exact package manifests/license files in the Cargo dependency sources.

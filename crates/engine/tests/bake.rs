@@ -1,10 +1,10 @@
 use std::path::Path;
-use vibecolor_color::{ColorSpace, Primaries, Transfer};
-use vibecolor_core::{
+use tinge_color::{ColorSpace, Primaries, Transfer};
+use tinge_core::{
     Recipe,
     lut::{CubeLut, LutInterpolation},
 };
-use vibecolor_engine::bake::{BakeOptions, LutEncoding, bake, eligible_nodes};
+use tinge_engine::bake::{BakeOptions, LutEncoding, bake, eligible_nodes};
 fn linear() -> LutEncoding {
     LutEncoding::Standard {
         space: ColorSpace {
@@ -81,7 +81,7 @@ fn native_cdl_bake_grid_matches_independent_hdr_reference_and_display_path() {
     .unwrap();
     let case = &fixture["cases"][0];
     let recipe:Recipe=serde_json::from_value(serde_json::json!({"nodes":[{"id":"cdl","op":{"type":"ocio_grade","grade":case["transform"]["grade"]}}],"output":"cdl"})).unwrap();
-    let pipeline: vibecolor_ocio::Pipeline =
+    let pipeline: tinge_ocio::Pipeline =
         serde_json::from_str(include_str!("../../../examples/aces2-srgb.json")).unwrap();
     let options = BakeOptions {
         size: 9,

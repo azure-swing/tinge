@@ -72,13 +72,13 @@ fn working_space() -> String {
 fn is_working_space(name: &str) -> bool {
     name == WORKING_SPACE
 }
-fn working_encoding() -> vibecolor_color::ColorSpace {
-    vibecolor_color::ColorSpace {
-        primaries: vibecolor_color::Primaries::Srgb,
-        transfer: vibecolor_color::Transfer::Linear,
+fn working_encoding() -> tinge_color::ColorSpace {
+    tinge_color::ColorSpace {
+        primaries: tinge_color::Primaries::Srgb,
+        transfer: tinge_color::Transfer::Linear,
     }
 }
-fn is_working_encoding(space: &vibecolor_color::ColorSpace) -> bool {
+fn is_working_encoding(space: &tinge_color::ColorSpace) -> bool {
     *space == working_encoding()
 }
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -100,8 +100,8 @@ impl DisplayTarget {
             Self::Rec2100Pq => "Rec.2100-PQ - Display",
         }
     }
-    pub fn color_space(self) -> vibecolor_color::ColorSpace {
-        use vibecolor_color::{ColorSpace, Primaries, Transfer};
+    pub fn color_space(self) -> tinge_color::ColorSpace {
+        use tinge_color::{ColorSpace, Primaries, Transfer};
         match self {
             Self::Srgb => ColorSpace::default(),
             Self::DisplayP3 => ColorSpace {
@@ -152,7 +152,7 @@ pub struct Pipeline {
         default = "working_encoding",
         skip_serializing_if = "is_working_encoding"
     )]
-    pub working_encoding: vibecolor_color::ColorSpace,
+    pub working_encoding: tinge_color::ColorSpace,
     /// Custom config display names; encoding remains owned by `display`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
@@ -167,7 +167,7 @@ impl Pipeline {
             "OCIO engine version mismatch"
         );
         ensure!(
-            self.working_encoding.transfer == vibecolor_color::Transfer::Linear,
+            self.working_encoding.transfer == tinge_color::Transfer::Linear,
             "OCIO working_encoding must be linear"
         );
         compile_with_context(
@@ -187,14 +187,14 @@ impl Pipeline {
     ) -> Result<TransformReport> {
         convert_primaries(
             pixels,
-            vibecolor_color::Primaries::Srgb,
+            tinge_color::Primaries::Srgb,
             self.working_encoding.primaries,
         );
         let report = processor.apply(pixels)?;
         convert_primaries(
             pixels,
             self.working_encoding.primaries,
-            vibecolor_color::Primaries::Srgb,
+            tinge_color::Primaries::Srgb,
         );
         ensure!(
             pixels.iter().flatten().all(|v| v.is_finite()),
@@ -241,7 +241,7 @@ impl Pipeline {
         );
         let info = inspect_with_context(&self.source(), &self.context)?;
         ensure!(
-            self.working_encoding.transfer == vibecolor_color::Transfer::Linear,
+            self.working_encoding.transfer == tinge_color::Transfer::Linear,
             "OCIO working_encoding must be linear; grading Frame remains scene-linear sRGB"
         );
         ensure!(
@@ -323,7 +323,7 @@ impl Pipeline {
                 convert_primaries(
                     pixels,
                     self.working_encoding.primaries,
-                    vibecolor_color::Primaries::Srgb,
+                    tinge_color::Primaries::Srgb,
                 );
                 Ok(Some(report))
             }
@@ -333,7 +333,7 @@ impl Pipeline {
         self.validate()?;
         convert_primaries(
             pixels,
-            vibecolor_color::Primaries::Srgb,
+            tinge_color::Primaries::Srgb,
             self.working_encoding.primaries,
         );
         apply_with_context(
@@ -363,11 +363,11 @@ impl Pipeline {
 
 fn convert_primaries(
     pixels: &mut [[f32; 4]],
-    from: vibecolor_color::Primaries,
-    to: vibecolor_color::Primaries,
+    from: tinge_color::Primaries,
+    to: tinge_color::Primaries,
 ) {
     for pixel in pixels {
-        let rgb = vibecolor_color::convert_linear([pixel[0], pixel[1], pixel[2]], from, to);
+        let rgb = tinge_color::convert_linear([pixel[0], pixel[1], pixel[2]], from, to);
         pixel[..3].copy_from_slice(&rgb);
     }
 }

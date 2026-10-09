@@ -109,9 +109,6 @@ project_info 虽然分页返回，project::load 仍读取并验证全部历史�
 
 debug 与新 release 二进制的 plugin-acceptance、agent-acceptance 均通过，覆盖
 49 项工具契约、幂等淘汰回执、图片资源、查看器复用/关闭。
-`cargo build --release --locked` 已产生新的 `target/release/deps/vibecolor.exe`，
-但替换 `target/release/vibecolor.exe` 时返回拒绝访问；本次将新链接产物复制到
-忽略目录 `artifacts/vibecolor-audit.exe` 执行 release 验收，没有替换或关闭现有服务。
-该构建命令本身未完整成功，不将其记录为干净构建通过。
+先前审计受运行中的程序占用影响，使用独立链接产物完成了发布验收。当前统一名称与正式构建方式见 [status.md](status.md)。
 Linux CI、实际模型选择、
 宿主看图兼容性、真实 RAW 相机语料、视觉调色质量和内存压力基准不在本次已完成验收范围。

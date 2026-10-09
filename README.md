@@ -1,6 +1,6 @@
 # Tinge
 
-面向 agent 的本地图片调色插件，基于 VibeColor 原生 Rust CLI 引擎。目标是覆盖 DaVinci Resolve Studio 中适用于静态图片的调色、蒙版和图像处理，并补足 Lightroom 的摄影显影工作流。
+面向 agent 的本地图片调色插件，基于 Tinge 原生 Rust CLI 引擎。目标是覆盖 DaVinci Resolve Studio 中适用于静态图片的调色、蒙版和图像处理，并补足 Lightroom 的摄影显影工作流。
 
 **当前为 0.2 开发版，尚未达到完整功能对等。** 已实现可运行的浮点调色引擎、节点图、蒙版、非破坏性项目和 MCP；完整需求没有缩减。具体差距见 [功能覆盖表](docs/coverage.md)。原有语言约定和架构计划保存在 [原始设计](docs/original-design.md)。
 
@@ -10,7 +10,7 @@
 
 ```powershell
 cargo build --release --locked
-$vc = '.\target\release\vibecolor.exe'
+$vc = '.\target\release\tinge.exe'
 & $vc capabilities
 & $vc schema recipe
 & $vc --help
@@ -20,39 +20,39 @@ $vc = '.\target\release\vibecolor.exe'
 
 ## 调一张图片
 
-本地看图界面：`vibecolor view portrait.vcolor` 启动后自动打开网页。支持缩放、圈划、原图/历史版本对比和版本保存；agent 从 CLI/MCP 调色后页面自动更新。`--no-open` 返回可在 Codex 侧栏浏览器打开的本地 URL；`vibecolor selections portrait.vcolor` 读取圈选批注。预览采用带 ICC 标签的 sRGB SDR，专业显示校准/HDR 仍待实现。详见 [Web 查看器](docs/viewer-workflow.md)。
+本地看图界面：`tinge view portrait.tinge` 启动后自动打开网页。支持缩放、圈划、原图/历史版本对比和版本保存；agent 从 CLI/MCP 调色后页面自动更新。`--no-open` 返回可在 Codex 侧栏浏览器打开的本地 URL；`tinge selections portrait.tinge` 读取圈选批注。预览采用带 ICC 标签的 sRGB SDR，专业显示校准/HDR 仍待实现。详见 [Web 查看器](docs/viewer-workflow.md)。
 
 ```powershell
 # 直接执行配方，默认导出 16 位 PNG
 & $vc grade photo.jpg --recipe examples/cinematic.json --output graded.png
 
 # 创建非破坏性项目，冻结源图副本
-& $vc init photo.jpg --project portrait.vcolor
+& $vc init photo.jpg --project portrait.tinge
 
 # 一次事务提交蒙版、节点和输出，要求项目版本为 0
-& $vc apply portrait.vcolor --expect-revision 0 --edits examples/local-edits.json
+& $vc apply portrait.tinge --expect-revision 0 --edits examples/local-edits.json
 
 # agent 看图、读取统计和示波器，再迭代
-& $vc preview portrait.vcolor --output preview.png
-& $vc compare portrait.vcolor --output comparison.png
-& $vc stats portrait.vcolor --scopes
+& $vc preview portrait.tinge --output preview.png
+& $vc compare portrait.tinge --output comparison.png
+& $vc stats portrait.tinge --scopes
 
 # 输出 16 位 PNG / TIFF，或线性浮点 EXR / TIFF
-& $vc render portrait.vcolor --output final.png
-& $vc render portrait.vcolor --output final.exr
-& $vc render portrait.vcolor --output final.tiff --bit-depth 32
+& $vc render portrait.tinge --output final.png
+& $vc render portrait.tinge --output final.exr
+& $vc render portrait.tinge --output final.tiff --bit-depth 32
 
 # 恢复原始配方，产生新版本；已有历史保留
-& $vc restore portrait.vcolor 0 --expect-revision 1
+& $vc restore portrait.tinge 0 --expect-revision 1
 ```
 
 默认拒绝覆盖已有输出；需要覆盖时显式使用 `--overwrite`。输出禁止与源图、项目文件或项目资产冲突。
 
 ## Agent 协议
 
-MCP 已按 [OpenAI Plugin guidelines](https://developers.openai.com/plugins/plugin-guidelines) 改为独立命名工具：`vibecolor_project_info`、`vibecolor_edit_preview`、`vibecolor_submit_edit_preview`、`vibecolor_render`、`vibecolor_cleanup_plan`、`vibecolor_finalize` 等。每个工具包含完整静态参数契约和显式安全标注。旧通用 MCP 工具 `vibecolor_agent` / `vibecolor_run`、通用 job_submit / batch 不再公开或接受；CLI/JSONL 的 command 请求格式保持兼容。这是 MCP 接口的破坏性迁移，需更新调用端。图片默认返回资源引用，统计显式请求；后台任务支持会话内幂等重试。见 [Agent 工作流](docs/agent-workflow.md)。
+MCP 已按 [OpenAI Plugin guidelines](https://developers.openai.com/plugins/plugin-guidelines) 改为独立命名工具：`tinge_project_info`、`tinge_edit_preview`、`tinge_submit_edit_preview`、`tinge_render`、`tinge_cleanup_plan`、`tinge_finalize` 等。每个工具包含完整静态参数契约和显式安全标注。旧通用 MCP 工具 `tinge_agent` / `tinge_run`、通用 job_submit / batch 不再公开或接受；CLI/JSONL 的 command 请求格式保持兼容。这是 MCP 接口的破坏性迁移，需更新调用端。图片默认返回资源引用，统计显式请求；后台任务支持会话内幂等重试。见 [Agent 工作流](docs/agent-workflow.md)。
 
-Tinge 的本地 Windows 插件模板在 `plugin/`，包含 manifest、STDIO 连接和图片工作流 Skill。运行 `pwsh -File scripts/package-plugin.ps1` 构建包含原生二进制、Skill 参考资料、许可证与本地 marketplace 的独立包；脚本输出包根目录。没有提交或发布动作。设计依据、迁移和验收边界见 [插件规范改造](docs/plugin-design.md)。
+Tinge 的本地 Windows 插件模板在 `plugin/`，包含 manifest、STDIO 连接和图片工作流 Skill。运行 `pwsh -File scripts/package-plugin.ps1` 构建包含原生二进制、Skill 参考资料、许可证与本地 marketplace 的独立包；包固定输出到 `target/plugin-package/tinge`，使用正式 `target/release/tinge.exe`；构建前须结束占用程序的旧进程。脚本输出包根目录。没有提交或发布动作。设计依据、迁移和验收边界见 [插件规范改造](docs/plugin-design.md)。
 
 0.2.1 新增“定稿并清理”：选定最终版本后回收已登记的临时预览和其他版本临时导出，保留源图/资产/全部历史/最终导出。查看器不再写临时 PNG，Agent 预览可使用稳定缓存路径，无损 PNG/项目 JSON 进一步减少体积。详见 [临时文件工作流](docs/storage-workflow.md)。
 
@@ -76,33 +76,33 @@ Tinge 的本地 Windows 插件模板在 `plugin/`，包含 manifest、STDIO 连�
 MCP 客户端可使用以下通用 STDIO 配置，将 command 替换为实际绝对路径：
 
 ```json
-{"mcpServers":{"tinge":{"command":"C:/path/to/vibecolor.exe","args":["mcp"]}}}
+{"mcpServers":{"tinge":{"command":"C:/path/to/tinge.exe","args":["mcp"]}}}
 ```
 
 服务器支持初始化、工具枚举/调用、预览资源枚举/读取和 ping。同步工具与独立后台提交工具共存；任务可查询/协作取消，但重启恢复和完整宿主兼容验收仍待完成。详见 [协议说明](docs/protocol.md)。
 
 ## 引擎和文件
 
-RAW 可使用版本化的传感器电平、相机 WB/xy、曝光、裁切方向和相机标定选择：`raw-plan photo.CR2` 检查实际解析参数，`init photo.CR2 --project raw.vcolor --raw-develop examples/raw/as-shot.json` 创建项目。使用方法和相机验收范围见 [RAW 工作流](docs/raw-workflow.md)。
+RAW 可使用版本化的传感器电平、相机 WB/xy、曝光、裁切方向和相机标定选择：`raw-plan photo.CR2` 检查实际解析参数，`init photo.CR2 --project raw.tinge --raw-develop examples/raw/as-shot.json` 创建项目。使用方法和相机验收范围见 [RAW 工作流](docs/raw-workflow.md)。
 
 真实 OCIO / ACES 使用方法见 [专业色彩链](docs/color-pipeline.md)。例如：
 
 ```powershell
 & $vc ocio-configs
 & $vc ocio-inspect --builtin studio-config-v4.0.0_aces-v2.0_ocio-v2.5
-& $vc init photo.exr --project aces.vcolor --color-pipeline examples/aces2-srgb.json
-& $vc preview aces.vcolor --output aces-preview.png
-& $vc render aces.vcolor --output scene.exr
+& $vc init photo.exr --project aces.tinge --color-pipeline examples/aces2-srgb.json
+& $vc preview aces.tinge --output aces-preview.png
+& $vc render aces.tinge --output scene.exr
 
 # ACES 2.0 HDR / P3 输出，agent 预览使用独立 SDR view
-& $vc init photo.exr --project hdr.vcolor --color-pipeline examples/aces2-hdr1000.json
-& $vc render hdr.vcolor --output hdr-pq.png
-& $vc preview hdr.vcolor --output hdr-sdr.png
-& $vc render hdr.vcolor --output acescg.exr --output-space '{"primaries":"aces_cg","transfer":"linear"}'
+& $vc init photo.exr --project hdr.tinge --color-pipeline examples/aces2-hdr1000.json
+& $vc render hdr.tinge --output hdr-pq.png
+& $vc preview hdr.tinge --output hdr-sdr.png
+& $vc render hdr.tinge --output acescg.exr --output-space '{"primaries":"aces_cg","transfer":"linear"}'
 
 # 自定义配置及目录内 LUT 冻结为项目 OCIOZ 资产
-& $vc init photo.jpg --project custom.vcolor --color-pipeline examples/custom-ocio/pipeline.json
-& $vc preview custom.vcolor --output custom-preview.png
+& $vc init photo.jpg --project custom.tinge --color-pipeline examples/custom-ocio/pipeline.json
+& $vc preview custom.tinge --output custom-preview.png
 
 # 原生 Look 和指定 OCIO 空间中的 CDL 节点
 & $vc validate examples/node-ocio/recipe.json --color-pipeline examples/node-ocio/pipeline.json
@@ -111,13 +111,13 @@ RAW 可使用版本化的传感器电平、相机 WB/xy、曝光、裁切方向�
 
 | 模块 | 当前实现 |
 | --- | --- |
-| `vibecolor-core` | 配方验证、DAG、蒙版、31 类算子（含无模型抠像）、统计和示波器 |
-| `vibecolor-color` | RGB 原色矩阵、sRGB/gamma/PQ/HLG 传递函数 |
-| `vibecolor-ocio` | 真实 OCIO、配置发现、色彩转换、ACES 输入/显示链 |
-| `vibecolor-io` | 图片解码、RAW 适配、ICC、8/16/32 位原子导出 |
-| `vibecolor-project` | 冻结源图与资产、版本、事务、分支、标签、恢复 |
-| `vibecolor-engine` | CPU / Rayon 调度、内容缓存、节点进度、引擎取消标记 |
-| `vibecolor-cli` | 原生 CLI、JSON/JSONL 和 MCP STDIO |
+| `tinge-core` | 配方验证、DAG、蒙版、31 类算子（含无模型抠像）、统计和示波器 |
+| `tinge-color` | RGB 原色矩阵、sRGB/gamma/PQ/HLG 传递函数 |
+| `tinge-ocio` | 真实 OCIO、配置发现、色彩转换、ACES 输入/显示链 |
+| `tinge-io` | 图片解码、RAW 适配、ICC、8/16/32 位原子导出 |
+| `tinge-project` | 冻结源图与资产、版本、事务、分支、标签、恢复 |
+| `tinge-engine` | CPU / Rayon 调度、内容缓存、节点进度、引擎取消标记 |
+| `tinge-cli` | 原生 CLI、JSON/JSONL 和 MCP STDIO |
 
 节点之间在 scene-linear sRGB/D65 中以 32 位浮点交换图像，使用 straight alpha。曝光、HDR EV 分区、原有矩阵、滤波和合成使用线性域；主色轮、曲线、HSL/warper、原有 CDL 和分离色调使用明确的 sRGB 编码域。新增 ocio_grade 在节点内部进入指定 OCIO 处理空间执行原生 CDL/矩阵，或按配置应用 Look，再返回交换域。操作的名称表示控制概念，**不表示与 Resolve 私有算法逐像素相同**。具体参数、单位和限制见 [算子说明](docs/operators.md)。
 
@@ -128,7 +128,7 @@ RAW 可使用版本化的传感器电平、相机 WB/xy、曝光、裁切方向�
 - 输出：PNG 8/16、JPEG 8、TIFF 8/16/32、EXR 32。SDR RGB 可选择 sRGB/P3/Rec.2020/ACEScg 原色和正确 ICC；线性 EXR 写入色彩标签与 chromaticities。Rec.2020 PQ 输出限 16 位 PNG，写 cICP。
 - 整数导出最后裁剪 RGB 并报告。OCIO 支持 sRGB、P3、Rec.2100 PQ 显示输出；P3/PQ 项目为 agent 指定独立 SDR sRGB 预览 view。未启用时默认普通 sRGB，可添加 tone_map 或声明 output_space。手动 PQ 编码须声明 linear_unit_nits，完整 HLG/OOTF、HDR 静态元数据和校准显示仍待实现。
 - EXIF/XMP/IPTC 尚不复制；JPEG 和 32 位 TIFF 当前不能输出透明图片。RGBA EXR 在文件中预乘、内部为 straight alpha；零 alpha 隐藏 RGB 导出时丢弃并报告，外部 additive EXR 暂不支持。
-- 项目为 `.vcolor` JSON，旁边的 `.vcolor.assets/` 保存按内容命名的资产。搬迁时一起移动。`.lock` 文件只承载 OS 文件锁，不依赖删除文件解锁。
+- 项目为 `.tinge` JSON，旁边的 `.tinge.assets/` 保存按内容命名的资产。搬迁时一起移动。`.lock` 文件只承载 OS 文件锁，不依赖删除文件解锁。
 - 所有配方资源相对于配方文件目录解析；JSONL/MCP 的资源相对于当前目录或显式 `asset_base`。
 
 ## 验证
@@ -148,7 +148,7 @@ LUT 可检查纯 1D/3D 或组合 shaper，选择 trilinear/tetrahedral。纯颜�
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo run -p vibecolor-cli --example test_chart -- artifacts/test-chart.png
+cargo run -p tinge-cli --example test_chart -- artifacts/test-chart.png
 & $vc grade artifacts/test-chart.png --recipe examples/cinematic.json --output artifacts/graded.png
 
 # 开发用独立 ICC 检查，需要 Pillow/ImageCms；原生程序不依赖它

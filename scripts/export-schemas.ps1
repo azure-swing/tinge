@@ -1,7 +1,7 @@
 param([string]$Executable)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if (-not $Executable) { $Executable = Join-Path $projectRoot 'target/release/vibecolor.exe' }
+if (-not $Executable) { $Executable = Join-Path $projectRoot 'target/release/tinge.exe' }
 foreach ($kind in @('request', 'recipe', 'edits')) {
     $result = & $Executable schema $kind
     if ($LASTEXITCODE -ne 0) { throw "schema $kind failed" }

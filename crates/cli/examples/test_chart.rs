@@ -1,7 +1,7 @@
 //! Deterministic engineering fixture; no external photographs or image generator required.
 use anyhow::Result;
-use vibecolor_color::{from_display, hsv_to_rgb};
-use vibecolor_core::Frame;
+use tinge_color::{from_display, hsv_to_rgb};
+use tinge_core::Frame;
 fn main() -> Result<()> {
     let path = std::env::args()
         .nth(1)
@@ -45,11 +45,11 @@ fn main() -> Result<()> {
         }
     }
     let frame = Frame::new(w, h, pixels)?;
-    let opt = vibecolor_io::ExportOptions {
+    let opt = tinge_io::ExportOptions {
         overwrite: true,
         ..Default::default()
     };
-    let report = vibecolor_io::export(&frame, std::path::Path::new(&path), opt)?;
+    let report = tinge_io::export(&frame, std::path::Path::new(&path), opt)?;
     println!("{}", serde_json::to_string(&report)?);
     Ok(())
 }

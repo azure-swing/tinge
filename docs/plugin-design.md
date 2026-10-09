@@ -10,8 +10,8 @@
 
 ## 工具契约
 
-MCP 不再枚举或接受 vibecolor_agent/vibecolor_run/job_submit/batch。
-每个业务操作由 vibecolor_<操作> 独立公开，后台按 submit_<操作> 分别公开。
+MCP 不再枚举或接受 tinge_agent/tinge_run/job_submit/batch。
+每个业务操作由 tinge_<操作> 独立公开，后台按 submit_<操作> 分别公开。
 Rust Request 枚举仍是引擎与 CLI/JSONL 的共同实现；工具契约从对应单项生成，
 去掉 command，保留严格字段检查和所有传递类型定义。
 新增请求类型必须登记安全元数据或明确保持 CLI-only，否则目录完整性测试失败。
@@ -37,11 +37,12 @@ MCP 版本协商仍为现有 STDIO 子集，没有声称实现官方 Tasks 或 S
 ## 本地包与迁移
 
 插件标识为 `tinge`，显示名为 **Tinge**；本地 marketplace 标识为 `tinge-local`，
-MCP 连接名及 Skill 依赖同步为 `tinge`。底层 VibeColor 引擎的二进制、
-`vibecolor_*` 工具名和 `.vcolor` 文件格式沿用现有契约。
+MCP 连接名及 Skill 依赖同步为 `tinge`。原生二进制统一为 `tinge.exe`，
+工具名统一为 `tinge_*`，项目示例统一为 `.tinge`；不提供旧名称兼容入口。
 
-运行 `pwsh -File scripts/package-plugin.ps1` 构建 Windows release 并生成一个新包根目录；
-默认链接到独立输出路径，不覆盖运行中会话的 exe。已有最新构建可加 -SkipBuild，
+运行 `pwsh -File scripts/package-plugin.ps1` 直接构建 `target/release/tinge.exe`，
+并更新固定包目录 `target/plugin-package/tinge`。构建前须结束占用正式程序的进程；
+脚本不会自动终止进程或另建可执行版本。已有最新构建可加 -SkipBuild，
 非默认二进制路径可用 -Executable 指定。包内包括 tinge/ 插件、原生 exe、许可证、
 工作流 Skill/参考资料和 .agents/plugins/marketplace.json。
 manifest 采用官方仍支持的 .codex-plugin/plugin.json 兼容布局，MCP 使用 .mcp.json。
@@ -49,9 +50,9 @@ PLUGIN_ROOT 指向实际安装目录；不绑定开发机器路径，不自动�
 plugin/ 是构建模板，二进制与参考资料由脚本装入最终包；安装应使用生成的包。
 
 通用 STDIO 客户端仍可直接配置 exe + args:["mcp"]。
-已有 MCP 调用需要把 `name:vibecolor_agent, arguments:{command:render,...}` 改为
-`name:vibecolor_render, arguments:{...}`。
-旧 job_submit(request=edit_preview) 改为 vibecolor_submit_edit_preview，参数摊平，
+已有 MCP 调用需要把 `name:tinge_agent, arguments:{command:render,...}` 改为
+`name:tinge_render, arguments:{...}`。
+旧 job_submit(request=edit_preview) 改为 tinge_submit_edit_preview，参数摊平，
 idempotency_key 保留。完整结果设置 _response:full；内联图设置 _inline_image:true。
 preview 分析另需 include_analysis:true。
 CLI run/serve/batch/schema 均保留原格式和行为。
@@ -68,8 +69,8 @@ CLI run/serve/batch/schema 均保留原格式和行为。
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-python scripts/agent-acceptance.py --executable target/release/vibecolor.exe
-python scripts/plugin-acceptance.py --executable target/release/vibecolor.exe --package '<生成根目录>/tinge'
+python scripts/agent-acceptance.py --executable target/release/tinge.exe
+python scripts/plugin-acceptance.py --executable target/release/tinge.exe --package '<生成根目录>/tinge'
 ```
 
 工具选择样例在 tests/plugin-prompts.json。目标宿主回放每个 prompt，保存

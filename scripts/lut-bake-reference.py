@@ -16,7 +16,7 @@ from PIL import Image
 assert ocio.GetVersion() == "2.5.2"
 root = Path(__file__).resolve().parents[1]
 artifacts = root / "artifacts"
-executable = root / "target/release/vibecolor.exe"
+executable = root / "target/release/tinge.exe"
 
 
 def run(request):
@@ -81,7 +81,7 @@ for size in [17, 33]:
 
 
 # A project revision with ordered Looks, encoded CDL and fractional node mix.
-project = artifacts / "node-ocio-demo.vcolor"
+project = artifacts / "node-ocio-demo.tinge"
 original_project = project.read_bytes()
 cube = artifacts / "node-ocio-baked.cube"
 options = json.loads((root / "examples/lut-display-options.json").read_text())
@@ -92,7 +92,7 @@ inspected = run({"command": "lut_inspect", "input": str(cube)})
 assert inspected["lut"]["size_3d"] == 33
 cpu = file_cpu(cube)
 assert all(math.isfinite(v) for v in cpu.applyRGBA([.18, .4, .06, 1.]))
-reused = artifacts / "baked-lut-demo.vcolor"
+reused = artifacts / "baked-lut-demo.tinge"
 if not reused.exists():
     run({"command": "init", "input": str(artifacts / "test-chart.png"), "project": str(reused)})
     run({"command": "apply", "project": str(reused), "expect_revision": 0,

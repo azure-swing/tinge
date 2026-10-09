@@ -4,9 +4,9 @@ use std::{
     io::Write,
     process::{Command, Stdio},
 };
-use vibecolor_core::Frame;
+use tinge_core::Frame;
 fn request(request: Value, success: bool) -> Value {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args(["run", "-"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -62,15 +62,15 @@ fn cube_bake_import_freeze_project_revision_and_tamper_protection() {
     let inspected = request(json!({"command":"lut_inspect","input":cube}), true);
     assert_eq!(inspected["lut"]["size_3d"], 17);
     let input = dir.path().join("source.exr");
-    let project = dir.path().join("grade.vcolor");
+    let project = dir.path().join("grade.tinge");
     let frame = Frame::new(2, 1, vec![[1.2, -0.05, 0.4, 0.25], [-0.25, 0.3, 1.6, 1.0]]).unwrap();
-    vibecolor_io::export(
+    tinge_io::export(
         &frame,
         &input,
-        vibecolor_io::ExportOptions {
+        tinge_io::ExportOptions {
             bit_depth: 32,
-            space: vibecolor_color::ColorSpace {
-                transfer: vibecolor_color::Transfer::Linear,
+            space: tinge_color::ColorSpace {
+                transfer: tinge_color::Transfer::Linear,
                 ..Default::default()
             },
             ..Default::default()
@@ -92,7 +92,7 @@ fn cube_bake_import_freeze_project_revision_and_tamper_protection() {
         json!({"command":"render","project":project,"output":output}),
         true,
     );
-    let rendered = vibecolor_io::load(&output, None).unwrap();
+    let rendered = tinge_io::load(&output, None).unwrap();
     for (a, b) in rendered.pixels.iter().zip(&frame.pixels) {
         for (c, gain) in [1.1, 1.0, 0.9].iter().enumerate() {
             assert!((a[c] - b[c] * gain).abs() < 3e-6);
@@ -108,11 +108,11 @@ fn cube_bake_import_freeze_project_revision_and_tamper_protection() {
     assert_eq!(report["revision"], 1);
     assert_eq!(std::fs::read(&project).unwrap(), before);
     assert_eq!(std::fs::read(rebaked).unwrap(), original);
-    let p = vibecolor_project::load(&project).unwrap();
-    let vibecolor_core::Operation::Lut { path, .. } = &p.head().unwrap().recipe.nodes[0].op else {
+    let p = tinge_project::load(&project).unwrap();
+    let tinge_core::Operation::Lut { path, .. } = &p.head().unwrap().recipe.nodes[0].op else {
         unreachable!()
     };
-    std::fs::write(vibecolor_project::resolve(dir.path(), path), b"tampered").unwrap();
+    std::fs::write(tinge_project::resolve(dir.path(), path), b"tampered").unwrap();
     let rejected = dir.path().join("tamper.cube");
     request(
         json!({"command":"lut_bake","source":{"type":"project","project":project},"output":rejected}),
@@ -142,7 +142,7 @@ fn mcp_bakes_native_log_cdl_and_inspects_strict_cube_metadata() {
         ),
         call(3, json!({"command":"lut_inspect","input":output})),
     ];
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .arg("mcp")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

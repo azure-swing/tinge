@@ -12,7 +12,7 @@ use rawler::{
     },
 };
 use std::path::Path;
-use vibecolor_core::Frame;
+use tinge_core::Frame;
 
 pub use super::RawMetadata as RawInfo;
 pub fn is_raw(path: &Path) -> bool {

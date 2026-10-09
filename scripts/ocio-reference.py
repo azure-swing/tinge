@@ -1,7 +1,7 @@
 """Development oracle only: generate pinned OCIO reference fixtures.
 
 Run with the official OpenColorIO 2.5.2 Python wheel on PYTHONPATH.
-VibeColor's executable does not use Python or these bindings.
+tinge's executable does not use Python or these bindings.
 """
 import json
 from pathlib import Path

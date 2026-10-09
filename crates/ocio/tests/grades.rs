@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use vibecolor_ocio::{ConfigSource, NodeGrade, Transform, apply_with_context};
+use tinge_ocio::{ConfigSource, NodeGrade, Transform, apply_with_context};
 
 #[derive(serde::Deserialize)]
 struct Fixture {
@@ -24,7 +24,7 @@ fn root() -> std::path::PathBuf {
 fn cdl_matrix_and_looks_match_thirteen_official_native_reference_cases() {
     let fixture: Fixture =
         serde_json::from_str(include_str!("fixtures/grades-ocio-2.5.2.json")).unwrap();
-    assert_eq!(fixture.engine_version, vibecolor_ocio::version().unwrap());
+    assert_eq!(fixture.engine_version, tinge_ocio::version().unwrap());
     assert_eq!(fixture.cases.len(), 13);
     for mut case in fixture.cases {
         if let ConfigSource::File { path } = &mut case.config {
@@ -81,7 +81,7 @@ fn frozen_context_looks_keep_order_and_fallback_without_original_luts() {
         std::fs::create_dir_all(&path).unwrap();
         std::fs::write(path.join("look.cube"), lut).unwrap();
     }
-    let bytes = vibecolor_ocio::archive_file(&config).unwrap();
+    let bytes = tinge_ocio::archive_file(&config).unwrap();
     let archive = dir.path().join("grade.ocioz");
     std::fs::write(&archive, &bytes).unwrap();
     let source = ConfigSource::Frozen {
@@ -127,7 +127,7 @@ fn invalid_grades_fail_before_mutating_pixels() {
     for grade in grades {
         let grade = serde_json::from_value(grade).unwrap();
         let transform = Transform::Grade {
-            source: vibecolor_ocio::WORKING_SPACE.into(),
+            source: tinge_ocio::WORKING_SPACE.into(),
             grade,
         };
         assert!(apply_with_context(&config, &transform, &mut pixels, &BTreeMap::new()).is_err());

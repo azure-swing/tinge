@@ -7,11 +7,11 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, atomic::AtomicBool},
 };
-use vibecolor_color::{ColorSpace, Primaries, Transfer};
-use vibecolor_core::{Frame, Recipe};
-use vibecolor_engine::Engine;
-use vibecolor_io::{self as io, ExportOptions};
-use vibecolor_project::{self as project, Edit};
+use tinge_color::{ColorSpace, Primaries, Transfer};
+use tinge_core::{Frame, Recipe};
+use tinge_engine::Engine;
+use tinge_io::{self as io, ExportOptions};
+use tinge_project::{self as project, Edit};
 
 fn label() -> String {
     "agent edit".into()
@@ -25,7 +25,7 @@ pub enum LutBakeSource {
     Recipe {
         recipe: Recipe,
         #[serde(default)]
-        color_pipeline: Option<Box<vibecolor_ocio::Pipeline>>,
+        color_pipeline: Option<Box<tinge_ocio::Pipeline>>,
     },
     Project {
         project: PathBuf,
@@ -37,7 +37,7 @@ pub enum LutBakeSource {
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum CdlExportSource {
     Document {
-        document: Box<vibecolor_ocio::cdl::CdlDocument>,
+        document: Box<tinge_ocio::cdl::CdlDocument>,
     },
     Project {
         project: PathBuf,
@@ -57,20 +57,20 @@ pub enum Request {
         expect_revision: u64,
         #[serde(default)]
         revision: Option<u64>,
-        mask: vibecolor_core::Mask,
+        mask: tinge_core::Mask,
         #[serde(default)]
         note: String,
     },
     Cutout {
         input: PathBuf,
         output: PathBuf,
-        options: vibecolor_core::cutout::CutoutOptions,
+        options: tinge_core::cutout::CutoutOptions,
         #[serde(default)]
         matte: Option<PathBuf>,
         #[serde(default)]
         input_space: Option<ColorSpace>,
         #[serde(default)]
-        color_pipeline: Option<vibecolor_ocio::Pipeline>,
+        color_pipeline: Option<tinge_ocio::Pipeline>,
         #[serde(default)]
         raw_develop: Option<io::RawDevelopOptions>,
         #[serde(default)]
@@ -90,9 +90,9 @@ pub enum Request {
     CdlImport {
         input: PathBuf,
         #[serde(default)]
-        selector: Option<vibecolor_ocio::cdl::CdlSelector>,
+        selector: Option<tinge_ocio::cdl::CdlSelector>,
         color_space: String,
-        style: vibecolor_ocio::CdlStyle,
+        style: tinge_ocio::CdlStyle,
         #[serde(default)]
         inverse: bool,
     },
@@ -109,7 +109,7 @@ pub enum Request {
         source: LutBakeSource,
         output: PathBuf,
         #[serde(default)]
-        options: vibecolor_engine::bake::BakeOptions,
+        options: tinge_engine::bake::BakeOptions,
         #[serde(default)]
         overwrite: bool,
         #[serde(default)]
@@ -133,13 +133,13 @@ pub enum Request {
     },
     OcioConfigs {},
     OcioInspect {
-        config: vibecolor_ocio::ConfigSource,
+        config: tinge_ocio::ConfigSource,
         #[serde(default)]
         context: BTreeMap<String, String>,
     },
     OcioTransform {
-        config: vibecolor_ocio::ConfigSource,
-        transform: vibecolor_ocio::Transform,
+        config: tinge_ocio::ConfigSource,
+        transform: tinge_ocio::Transform,
         pixels: Vec<[f32; 4]>,
         #[serde(default)]
         context: BTreeMap<String, String>,
@@ -166,7 +166,7 @@ pub enum Request {
         #[serde(default)]
         input_space: Option<ColorSpace>,
         #[serde(default)]
-        color_pipeline: Option<vibecolor_ocio::Pipeline>,
+        color_pipeline: Option<tinge_ocio::Pipeline>,
         #[serde(default)]
         raw_develop: Option<io::RawDevelopOptions>,
     },
@@ -254,7 +254,7 @@ pub enum Request {
     Validate {
         recipe: Recipe,
         #[serde(default)]
-        color_pipeline: Option<vibecolor_ocio::Pipeline>,
+        color_pipeline: Option<tinge_ocio::Pipeline>,
     },
     Grade {
         input: PathBuf,
@@ -263,7 +263,7 @@ pub enum Request {
         #[serde(default)]
         input_space: Option<ColorSpace>,
         #[serde(default)]
-        color_pipeline: Option<vibecolor_ocio::Pipeline>,
+        color_pipeline: Option<tinge_ocio::Pipeline>,
         #[serde(default)]
         raw_develop: Option<io::RawDevelopOptions>,
         #[serde(default)]
@@ -300,7 +300,7 @@ pub enum Request {
         #[serde(default)]
         input_space: Option<ColorSpace>,
         #[serde(default)]
-        color_pipeline: Option<vibecolor_ocio::Pipeline>,
+        color_pipeline: Option<tinge_ocio::Pipeline>,
         #[serde(default)]
         raw_develop: Option<io::RawDevelopOptions>,
         #[serde(default)]
@@ -431,7 +431,7 @@ fn export_options(
     overwrite: bool,
     requested: Option<ColorSpace>,
     linear_unit_nits: Option<f32>,
-    pipeline: Option<&vibecolor_ocio::Pipeline>,
+    pipeline: Option<&tinge_ocio::Pipeline>,
 ) -> ExportOptions {
     let mut opt = options(path, bits, overwrite);
     opt.linear_unit_nits = linear_unit_nits;
@@ -491,7 +491,7 @@ impl Session {
         if let Some(data) = self.analyses.get(&key) {
             return Ok(data.clone());
         }
-        let data = serde_json::to_value(vibecolor_core::scopes::analyze(frame))?;
+        let data = serde_json::to_value(tinge_core::scopes::analyze(frame))?;
         if self.analyses.len() >= 8 {
             self.analyses.clear();
         }
@@ -519,7 +519,7 @@ impl Session {
     fn preview_resource(&mut self, path: &Path) -> Result<String> {
         let path = std::fs::canonicalize(path)?;
         let hash = io::hash_file(&path)?;
-        let uri = format!("vibecolor://preview/{hash}");
+        let uri = format!("tinge://preview/{hash}");
         self.previews.retain(|id, old| old != &path || id == &uri);
         self.previews.insert(uri.clone(), path);
         while self.previews.len() > 64 {
@@ -590,7 +590,7 @@ impl Session {
                 asset_base,
             } => {
                 ensure!(
-                    options.output == vibecolor_core::cutout::CutoutOutput::Cutout,
+                    options.output == tinge_core::cutout::CutoutOutput::Cutout,
                     "cutout command requires options.output=cutout; use --matte for scalar data or a recipe matte node"
                 );
                 options.validate()?;
@@ -617,8 +617,8 @@ impl Session {
                     .collect::<Vec<_>>();
                 protected.push(input.clone());
                 if let Some(p) = &color_pipeline {
-                    if let vibecolor_ocio::ConfigSource::File { path }
-                    | vibecolor_ocio::ConfigSource::Frozen { path, .. } = p.source()
+                    if let tinge_ocio::ConfigSource::File { path }
+                    | tinge_ocio::ConfigSource::Frozen { path, .. } = p.source()
                     {
                         protected.push(path);
                     }
@@ -653,19 +653,19 @@ impl Session {
                         "matte output must be PNG"
                     );
                 }
-                let input = vibecolor_engine::load_source_with_options(
+                let input = tinge_engine::load_source_with_options(
                     &input,
                     input_space,
                     color_pipeline.as_ref(),
                     raw_develop.as_ref(),
                 )?;
-                let (frame, report) = vibecolor_core::cutout::run(
+                let (frame, report) = tinge_core::cutout::run(
                     &input,
                     &options,
                     &|p, w, h| io::load_matte(&project::resolve(&origin, p), w, h),
                     self.cancel.as_ref(),
                 )?;
-                let (export, transform) = vibecolor_engine::export_frame(
+                let (export, transform) = tinge_engine::export_frame(
                     &frame,
                     &output,
                     export_options(
@@ -686,9 +686,9 @@ impl Session {
                 )
             }
             Request::CdlInspect { input } => {
-                let (document, hash) = vibecolor_ocio::cdl::read(&input)?;
+                let (document, hash) = tinge_ocio::cdl::read(&input)?;
                 Ok(
-                    json!({"input":input,"hash":hash,"document":document,"engine_version":vibecolor_ocio::version()?,"scope":"native ASC SOP/saturation and standard descriptions; strict UTF-8 XML; unsupported XML extensions and ColorCorrectionRef are rejected"}),
+                    json!({"input":input,"hash":hash,"document":document,"engine_version":tinge_ocio::version()?,"scope":"native ASC SOP/saturation and standard descriptions; strict UTF-8 XML; unsupported XML extensions and ColorCorrectionRef are rejected"}),
                 )
             }
             Request::CdlImport {
@@ -698,7 +698,7 @@ impl Session {
                 style,
                 inverse,
             } => {
-                let (document, hash) = vibecolor_ocio::cdl::read(&input)?;
+                let (document, hash) = tinge_ocio::cdl::read(&input)?;
                 let (index, grade) =
                     document.import(&hash, selector.as_ref(), color_space, style, inverse)?;
                 Ok(
@@ -710,9 +710,7 @@ impl Session {
                 output,
                 overwrite,
             } => {
-                use vibecolor_ocio::cdl::{
-                    CdlDocument, CdlFormat, CdlMetadata, correction_from_grade,
-                };
+                use tinge_ocio::cdl::{CdlDocument, CdlFormat, CdlMetadata, correction_from_grade};
                 let format = CdlFormat::from_path(&output)?;
                 let (document, context) = match source {
                     CdlExportSource::Document { document } => {
@@ -746,7 +744,7 @@ impl Session {
                                 .iter()
                                 .find(|n| &n.id == id)
                                 .ok_or_else(|| anyhow::anyhow!("CDL node not found: {id}"))?;
-                            let vibecolor_core::Operation::OcioGrade { grade } = &node.op else {
+                            let tinge_core::Operation::OcioGrade { grade } = &node.op else {
                                 anyhow::bail!("selected node {id} is not an OCIO CDL");
                             };
                             let (correction, parent) = correction_from_grade(grade, id)?;
@@ -770,7 +768,7 @@ impl Session {
                         )
                     }
                 };
-                let xml = vibecolor_ocio::cdl::write(&document)?;
+                let xml = tinge_ocio::cdl::write(&document)?;
                 io::atomic_bytes(&output, xml.as_bytes(), overwrite)?;
                 Ok(
                     json!({"output":output,"hash":blake3::hash(xml.as_bytes()).to_hex().to_string(),"bytes":xml.len(),"document":document,"source_context":context,"scope":"stored forward SOP/saturation parameters and standard descriptions; XML does not encode processing space, style, direction, graph inputs, masks or node mix; not an evaluated graph export"}),
@@ -783,7 +781,7 @@ impl Session {
                     blake3::hash(text.as_bytes()).to_hex().as_str() == hash,
                     "LUT changed during inspection"
                 );
-                let lut = vibecolor_core::lut::CubeLut::parse(&text)?;
+                let lut = tinge_core::lut::CubeLut::parse(&text)?;
                 Ok(
                     json!({"input":input,"hash":hash,"lut":lut.info(),"interpolation":["trilinear","tetrahedral"],"outside_domain":"clamp"}),
                 )
@@ -808,14 +806,14 @@ impl Session {
                     } => {
                         let origin = asset_base.unwrap_or(std::env::current_dir()?);
                         for n in &recipe.nodes {
-                            if let vibecolor_core::Operation::Lut { path, .. } = &n.op {
+                            if let tinge_core::Operation::Lut { path, .. } = &n.op {
                                 ensure_distinct(&project::resolve(&origin, path), &output)?;
                             }
                         }
                         if let Some(p) = &color_pipeline
-                            && let vibecolor_ocio::PipelineConfig::Source(
-                                vibecolor_ocio::ConfigSource::File { path }
-                                | vibecolor_ocio::ConfigSource::Frozen { path, .. },
+                            && let tinge_ocio::PipelineConfig::Source(
+                                tinge_ocio::ConfigSource::File { path }
+                                | tinge_ocio::ConfigSource::Frozen { path, .. },
                             ) = &p.config
                         {
                             let config = if path.is_absolute() {
@@ -825,7 +823,7 @@ impl Session {
                             };
                             ensure_distinct(&config, &output)?;
                         }
-                        for file in vibecolor_engine::bake::editable_dependencies(
+                        for file in tinge_engine::bake::editable_dependencies(
                             &recipe,
                             color_pipeline.as_deref(),
                             &origin,
@@ -846,7 +844,7 @@ impl Session {
                         let p = project::load(&path)?;
                         protect_project(&path, &p, &output)?;
                         let rev = p.get_revision(revision.unwrap_or(p.revision))?;
-                        vibecolor_engine::verify_recipe_assets(&rev.recipe, project::base(&path))?;
+                        tinge_engine::verify_recipe_assets(&rev.recipe, project::base(&path))?;
                         (
                             rev.recipe.clone(),
                             rev.color_pipeline.clone(),
@@ -855,8 +853,7 @@ impl Session {
                         )
                     }
                 };
-                let (text, report) =
-                    vibecolor_engine::bake::bake(recipe, pipeline, &origin, options)?;
+                let (text, report) = tinge_engine::bake::bake(recipe, pipeline, &origin, options)?;
                 io::atomic_bytes(&output, text.as_bytes(), overwrite)?;
                 Ok(
                     json!({"output":output,"hash":blake3::hash(text.as_bytes()).to_hex().to_string(),"bytes":text.len(),"revision":revision,"bake":report,"source_development_included":false,"input_scope":"independent RGB samples; RAW decoding/development and source image not baked"}),
@@ -864,10 +861,10 @@ impl Session {
             }
             Request::Capabilities {} => Ok(capabilities()),
             Request::OcioConfigs {} => Ok(
-                json!({"engine_version":vibecolor_ocio::version()?,"configs":vibecolor_ocio::builtin_configs()?}),
+                json!({"engine_version":tinge_ocio::version()?,"configs":tinge_ocio::builtin_configs()?}),
             ),
             Request::OcioInspect { config, context } => Ok(serde_json::to_value(
-                vibecolor_ocio::inspect_with_context(&config, &context)?,
+                tinge_ocio::inspect_with_context(&config, &context)?,
             )?),
             Request::OcioTransform {
                 config,
@@ -880,7 +877,7 @@ impl Session {
                     "numeric OCIO request exceeds 1M pixels; use image grading for images"
                 );
                 let report =
-                    vibecolor_ocio::apply_with_context(&config, &transform, &mut pixels, &context)?;
+                    tinge_ocio::apply_with_context(&config, &transform, &mut pixels, &context)?;
                 Ok(json!({"pixels":pixels,"transform":transform,"report":report}))
             }
             Request::Schema { kind, target } => {
@@ -1153,7 +1150,7 @@ impl Session {
                 ensure_distinct(&input, &output)?;
                 let origin = asset_base.unwrap_or(std::env::current_dir()?);
                 let color_pipeline = color_pipeline.map(|p| p.resolved_at(&origin));
-                let input = Arc::new(vibecolor_engine::load_source_with_options(
+                let input = Arc::new(tinge_engine::load_source_with_options(
                     &input,
                     input_space,
                     color_pipeline.as_ref(),
@@ -1163,7 +1160,7 @@ impl Session {
                 let f = self.engine.render_with_context(
                     input,
                     &recipe,
-                    vibecolor_engine::RenderContext {
+                    tinge_engine::RenderContext {
                         asset_base: &origin,
                         color_pipeline: color_pipeline.as_ref(),
                     },
@@ -1174,7 +1171,7 @@ impl Session {
                         }
                     },
                 )?;
-                let (mut report, transform) = vibecolor_engine::export_frame(
+                let (mut report, transform) = tinge_engine::export_frame(
                     &f,
                     &output,
                     export_options(
@@ -1217,7 +1214,7 @@ impl Session {
                     .color_pipeline
                     .as_ref()
                     .map(|p| p.resolved_at(project::base(&project)));
-                let (report, transform) = vibecolor_engine::export_frame(
+                let (report, transform) = tinge_engine::export_frame(
                     &f,
                     &output,
                     export_options(
@@ -1254,7 +1251,7 @@ impl Session {
             } => {
                 let origin = asset_base.unwrap_or(std::env::current_dir()?);
                 let color_pipeline = color_pipeline.map(|p| p.resolved_at(&origin));
-                let f = Arc::new(vibecolor_engine::load_source_with_options(
+                let f = Arc::new(tinge_engine::load_source_with_options(
                     &input,
                     input_space,
                     color_pipeline.as_ref(),
@@ -1264,7 +1261,7 @@ impl Session {
                     self.engine.render_with_context(
                         f,
                         &r,
-                        vibecolor_engine::RenderContext {
+                        tinge_engine::RenderContext {
                             asset_base: &origin,
                             color_pipeline: color_pipeline.as_ref(),
                         },
@@ -1274,7 +1271,7 @@ impl Session {
                 } else {
                     f
                 };
-                let mut analysis = serde_json::to_value(vibecolor_core::scopes::analyze(&f))?;
+                let mut analysis = serde_json::to_value(tinge_core::scopes::analyze(&f))?;
                 analysis["raw_develop"] = serde_json::to_value(raw_develop)?;
                 Ok(analysis)
             }
@@ -1287,7 +1284,7 @@ impl Session {
                 let analysis = self.analysis(&f, &p, revision.unwrap_or(p.revision))?;
                 let mut result = json!({"project":project,"revision":revision.unwrap_or(p.revision),"analysis":analysis});
                 if scopes {
-                    result["scopes"] = serde_json::to_value(vibecolor_core::scopes::scopes(&f))?;
+                    result["scopes"] = serde_json::to_value(tinge_core::scopes::scopes(&f))?;
                 }
                 Ok(result)
             }
@@ -1319,7 +1316,7 @@ impl Session {
                     .as_ref()
                     .map(|p| p.resolved_at(project::base(&project)));
                 let preview_pipeline = pipeline.as_ref().map(|p| p.for_preview()).transpose()?;
-                let (report, transform) = vibecolor_engine::export_frame(
+                let (report, transform) = tinge_engine::export_frame(
                     &preview,
                     &output,
                     options(&output, Some(8), overwrite || managed),
@@ -1382,7 +1379,7 @@ impl Session {
                 }
                 let compare = Frame::new(w, h, pixels)?;
                 let preview_pipeline = pipeline.as_ref().map(|p| p.for_preview()).transpose()?;
-                let (report, transform) = vibecolor_engine::export_frame(
+                let (report, transform) = tinge_engine::export_frame(
                     &compare,
                     &output,
                     options(&output, Some(8), overwrite || managed),
@@ -1507,7 +1504,7 @@ pub fn capabilities() -> Value {
     let mut value: Value = serde_json::from_str(include_str!("capabilities.json"))
         .expect("embedded capabilities must be valid JSON");
     value["version"] = json!(env!("CARGO_PKG_VERSION"));
-    value["color_transforms"]["ocio_runtime"] = match vibecolor_ocio::version() {
+    value["color_transforms"]["ocio_runtime"] = match tinge_ocio::version() {
         Ok(version) => json!({"available":true,"version":version,"stub":false}),
         Err(error) => json!({"available":false,"error":error.to_string()}),
     };

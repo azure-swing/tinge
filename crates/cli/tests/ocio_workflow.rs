@@ -4,10 +4,10 @@ use std::{
     io::Write,
     process::{Command, Stdio},
 };
-use vibecolor_core::Frame;
+use tinge_core::Frame;
 
 fn run(request: Value) -> Value {
-    let mut process = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut process = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args(["run", "-"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -30,7 +30,7 @@ fn run(request: Value) -> Value {
 }
 
 fn rejected(request: Value) -> Value {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args(["run", "-"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -57,14 +57,14 @@ fn native_grade_mcp_schema_numeric_oracle_and_persistent_node_cache() {
     let input = dir.path().join("scene.exr");
     let output = dir.path().join("grade.exr");
     let frame = Frame::new(1, 1, vec![[0.18, 0.4, 0.06, 0.25]]).unwrap();
-    vibecolor_io::export(
+    tinge_io::export(
         &frame,
         &input,
-        vibecolor_io::ExportOptions {
+        tinge_io::ExportOptions {
             bit_depth: 32,
-            space: vibecolor_color::ColorSpace {
-                primaries: vibecolor_color::Primaries::Srgb,
-                transfer: vibecolor_color::Transfer::Linear,
+            space: tinge_color::ColorSpace {
+                primaries: tinge_color::Primaries::Srgb,
+                transfer: tinge_color::Transfer::Linear,
             },
             ..Default::default()
         },
@@ -100,7 +100,7 @@ fn native_grade_mcp_schema_numeric_oracle_and_persistent_node_cache() {
         ),
         call(7, json!({"command":"schema","target":"op:ocio_grade"})),
     ];
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args(["--progress", "mcp"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -150,7 +150,7 @@ fn native_grade_mcp_schema_numeric_oracle_and_persistent_node_cache() {
     assert_eq!(events[0]["data"]["cached"], false);
     assert_eq!(events[1]["data"]["cached"], true);
     assert!(events[1]["data"]["ocio_transform"]["processor_cache_id"].is_string());
-    let pixel = vibecolor_io::load(&output, None).unwrap().pixels[0];
+    let pixel = tinge_io::load(&output, None).unwrap().pixels[0];
     let expected: [f32; 4] = serde_json::from_value(case["expected"][1].clone()).unwrap();
     for c in 0..4 {
         assert!((pixel[c] - expected[c]).abs() < 3e-5);
@@ -170,14 +170,14 @@ fn log_domain_cdl_cli_grade_project_float_and_preview_match_independent_referenc
     pixels[3][3] = 1.0;
     let frame = Frame::new(pixels.len() as u32, 1, pixels.clone()).unwrap();
     let input = dir.path().join("source.exr");
-    vibecolor_io::export(
+    tinge_io::export(
         &frame,
         &input,
-        vibecolor_io::ExportOptions {
+        tinge_io::ExportOptions {
             bit_depth: 32,
-            space: vibecolor_color::ColorSpace {
-                primaries: vibecolor_color::Primaries::Srgb,
-                transfer: vibecolor_color::Transfer::Linear,
+            space: tinge_color::ColorSpace {
+                primaries: tinge_color::Primaries::Srgb,
+                transfer: tinge_color::Transfer::Linear,
             },
             ..Default::default()
         },
@@ -193,7 +193,7 @@ fn log_domain_cdl_cli_grade_project_float_and_preview_match_independent_referenc
     run(
         json!({"command":"grade","input":input,"recipe":recipe,"output":grade,"color_pipeline":pipeline}),
     );
-    let project = dir.path().join("grade.vcolor");
+    let project = dir.path().join("grade.tinge");
     run(json!({"command":"init","input":input,"project":project,"color_pipeline":pipeline}));
     run(
         json!({"command":"apply","project":project,"expect_revision":0,"edits":[{"type":"replace_recipe","recipe":recipe}]}),
@@ -201,11 +201,8 @@ fn log_domain_cdl_cli_grade_project_float_and_preview_match_independent_referenc
     std::fs::remove_file(input).unwrap();
     let render = dir.path().join("render.exr");
     run(json!({"command":"render","project":project,"output":render}));
-    let output = vibecolor_io::load(&render, None).unwrap();
-    assert_eq!(
-        output.pixels,
-        vibecolor_io::load(&grade, None).unwrap().pixels
-    );
+    let output = tinge_io::load(&render, None).unwrap();
+    assert_eq!(output.pixels, tinge_io::load(&grade, None).unwrap().pixels);
     let expected: Vec<[f32; 4]> = serde_json::from_value(case["expected"].clone()).unwrap();
     for (i, (a, b)) in output.pixels.iter().zip(expected).enumerate() {
         for c in 0..3 {
@@ -218,10 +215,10 @@ fn log_domain_cdl_cli_grade_project_float_and_preview_match_independent_referenc
     }
     let output = dir.path().join("preview.png");
     run(json!({"command":"preview","project":project,"output":output}));
-    let pipeline: vibecolor_ocio::Pipeline = serde_json::from_value(pipeline).unwrap();
-    let mut expected = vibecolor_io::load(&render, None).unwrap().pixels;
+    let pipeline: tinge_ocio::Pipeline = serde_json::from_value(pipeline).unwrap();
+    let mut expected = tinge_io::load(&render, None).unwrap().pixels;
     pipeline.to_display(&mut expected).unwrap();
-    let actual = vibecolor_io::load_signal(&output).unwrap();
+    let actual = tinge_io::load_signal(&output).unwrap();
     for (a, b) in actual.pixels.iter().zip(expected) {
         for c in 0..4 {
             assert!((a[c] - b[c].clamp(0.0, 1.0)).abs() <= 0.5 / 255.0 + 3e-5);
@@ -256,27 +253,27 @@ fn look_nodes_freeze_context_history_and_reject_invalid_transactions_atomically(
     }
     let input = original.join("source.exr");
     let frame = Frame::new(1, 1, vec![[0.18, 0.4, 0.06, 0.25]]).unwrap();
-    vibecolor_io::export(
+    tinge_io::export(
         &frame,
         &input,
-        vibecolor_io::ExportOptions {
+        tinge_io::ExportOptions {
             bit_depth: 32,
-            space: vibecolor_color::ColorSpace {
-                primaries: vibecolor_color::Primaries::Srgb,
-                transfer: vibecolor_color::Transfer::Linear,
+            space: tinge_color::ColorSpace {
+                primaries: tinge_color::Primaries::Srgb,
+                transfer: tinge_color::Transfer::Linear,
             },
             ..Default::default()
         },
     )
     .unwrap();
-    let project = dir.path().join("look.vcolor");
+    let project = dir.path().join("look.tinge");
     let pipeline = json!({"config":{"type":"file","path":config},"working_space":"linear","display_name":"Photo sRGB","view":"Standard","context":{"GRADE":"warm"}});
     run(json!({"command":"init","input":input,"project":project,"color_pipeline":pipeline}));
     let recipe = json!({"nodes":[{"id":"look","op":{"type":"ocio_grade","grade":{"type":"look","looks":"+ContextGrade,+SoftContrast"}}}],"output":"look"});
     run(
         json!({"command":"apply","project":project,"expect_revision":0,"edits":[{"type":"replace_recipe","recipe":recipe}]}),
     );
-    let warm_project = vibecolor_project::load(&project).unwrap();
+    let warm_project = tinge_project::load(&project).unwrap();
     let hash = warm_project.head().unwrap().recipe_hash.clone();
     std::fs::remove_dir_all(original).unwrap();
     let warm = dir.path().join("warm.png");
@@ -289,7 +286,7 @@ fn look_nodes_freeze_context_history_and_reject_invalid_transactions_atomically(
     .unwrap();
     let expected: [f32; 4] =
         serde_json::from_value(reference["cases"][11]["expected"][1].clone()).unwrap();
-    let actual = vibecolor_io::load(&float, None).unwrap().pixels[0];
+    let actual = tinge_io::load(&float, None).unwrap().pixels[0];
     for c in 0..4 {
         assert!((actual[c] - expected[c]).abs() < 3e-5);
     }
@@ -306,7 +303,7 @@ fn look_nodes_freeze_context_history_and_reject_invalid_transactions_atomically(
     run(
         json!({"command":"apply","project":project,"expect_revision":1,"edits":[{"type":"set_color_pipeline","pipeline":neutral}]}),
     );
-    let p = vibecolor_project::load(&project).unwrap();
+    let p = tinge_project::load(&project).unwrap();
     assert_ne!(p.head().unwrap().recipe_hash, hash);
     let output = dir.path().join("neutral.png");
     run(json!({"command":"render","project":project,"output":output}));
@@ -324,7 +321,7 @@ fn look_nodes_freeze_context_history_and_reject_invalid_transactions_atomically(
 fn ocio_grade_project_preview_and_float_export_use_correct_domains() {
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("source.exr");
-    let project = dir.path().join("aces.vcolor");
+    let project = dir.path().join("aces.tinge");
     let original = Frame::new(
         3,
         1,
@@ -335,16 +332,16 @@ fn ocio_grade_project_preview_and_float_export_use_correct_domains() {
         ],
     )
     .unwrap();
-    let float_options = vibecolor_io::ExportOptions {
+    let float_options = tinge_io::ExportOptions {
         bit_depth: 32,
-        space: vibecolor_color::ColorSpace {
-            primaries: vibecolor_color::Primaries::Srgb,
-            transfer: vibecolor_color::Transfer::Linear,
+        space: tinge_color::ColorSpace {
+            primaries: tinge_color::Primaries::Srgb,
+            transfer: tinge_color::Transfer::Linear,
         },
         ..Default::default()
     };
-    vibecolor_io::export(&original, &input, float_options).unwrap();
-    let pipeline: vibecolor_ocio::Pipeline =
+    tinge_io::export(&original, &input, float_options).unwrap();
+    let pipeline: tinge_ocio::Pipeline =
         serde_json::from_str(include_str!("../../../examples/aces2-srgb.json")).unwrap();
     let mut expected = original.pixels.clone();
     pipeline.to_display(&mut expected).unwrap();
@@ -353,7 +350,7 @@ fn ocio_grade_project_preview_and_float_export_use_correct_domains() {
     let preview = dir.path().join("preview.png");
     let report = run(json!({"command":"preview","project":project,"output":preview}));
     assert_eq!(report["ocio_transform"]["engine_version"], "2.5.2");
-    let pixels = vibecolor_io::load_signal(&preview).unwrap().pixels;
+    let pixels = tinge_io::load_signal(&preview).unwrap().pixels;
     for (actual, expected) in pixels.iter().zip(expected) {
         for c in 0..4 {
             assert!((actual[c] - expected[c].clamp(0.0, 1.0)).abs() <= 0.5 / 255.0 + 1e-5);
@@ -362,11 +359,11 @@ fn ocio_grade_project_preview_and_float_export_use_correct_domains() {
     let scene = dir.path().join("scene.exr");
     let report = run(json!({"command":"render","project":project,"output":scene}));
     assert!(report["ocio_transform"].is_null());
-    let scene = vibecolor_io::load(&scene, None).unwrap();
+    let scene = tinge_io::load(&scene, None).unwrap();
     assert_eq!(scene.pixels, original.pixels); // No ODT is baked into EXR.
     let comparison = dir.path().join("comparison.png");
     run(json!({"command":"compare","project":project,"output":comparison}));
-    let comparison = vibecolor_io::load_signal(&comparison).unwrap();
+    let comparison = tinge_io::load_signal(&comparison).unwrap();
     assert_eq!(&comparison.pixels[..3], &comparison.pixels[3..]);
 }
 
@@ -375,13 +372,13 @@ fn encoded_input_is_decoded_once_and_grade_matches_project_render() {
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("encoded.png");
     let original = Frame::new(1, 1, vec![[0.18, 0.4, 0.05, 0.6]]).unwrap();
-    vibecolor_io::export(&original, &input, Default::default()).unwrap();
-    let mut pipeline: vibecolor_ocio::Pipeline =
+    tinge_io::export(&original, &input, Default::default()).unwrap();
+    let mut pipeline: tinge_ocio::Pipeline =
         serde_json::from_str(include_str!("../../../examples/aces2-srgb.json")).unwrap();
-    pipeline.input = vibecolor_ocio::InputEncoding::Encoded {
+    pipeline.input = tinge_ocio::InputEncoding::Encoded {
         color_space: "sRGB Encoded Rec.709 (sRGB)".into(),
     };
-    let decoded = vibecolor_engine::load_source(&input, None, Some(&pipeline)).unwrap();
+    let decoded = tinge_engine::load_source(&input, None, Some(&pipeline)).unwrap();
     for c in 0..4 {
         assert!((decoded.pixels[0][c] - original.pixels[0][c]).abs() < 3e-5);
     }
@@ -390,7 +387,7 @@ fn encoded_input_is_decoded_once_and_grade_matches_project_render() {
     run(
         json!({"command":"grade","input":input,"output":output,"recipe":recipe,"color_pipeline":pipeline}),
     );
-    let project = dir.path().join("encoded.vcolor");
+    let project = dir.path().join("encoded.tinge");
     run(json!({"command":"init","input":input,"project":project,"color_pipeline":pipeline}));
     run(
         json!({"command":"apply","project":project,"expect_revision":0,"edits":[{"type":"replace_recipe","recipe":recipe}]}),
@@ -405,7 +402,7 @@ fn encoded_input_is_decoded_once_and_grade_matches_project_render() {
 
 #[test]
 fn hdr_and_p3_projects_export_tagged_display_outputs_and_sdr_previews() {
-    use vibecolor_color::{ColorSpace, Primaries, Transfer};
+    use tinge_color::{ColorSpace, Primaries, Transfer};
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("scene.exr");
     let frame = Frame::new(
@@ -414,10 +411,10 @@ fn hdr_and_p3_projects_export_tagged_display_outputs_and_sdr_previews() {
         vec![[0.18; 4], [8.0, 2.0, 0.1, 1.0], [-0.1, 0.5, 1.0, 0.8]],
     )
     .unwrap();
-    vibecolor_io::export(
+    tinge_io::export(
         &frame,
         &input,
-        vibecolor_io::ExportOptions {
+        tinge_io::ExportOptions {
             bit_depth: 32,
             space: ColorSpace {
                 primaries: Primaries::Srgb,
@@ -441,8 +438,8 @@ fn hdr_and_p3_projects_export_tagged_display_outputs_and_sdr_previews() {
             Transfer::Srgb,
         ),
     ] {
-        let pipeline: vibecolor_ocio::Pipeline = serde_json::from_str(fixture).unwrap();
-        let project = dir.path().join(format!("{name}.vcolor"));
+        let pipeline: tinge_ocio::Pipeline = serde_json::from_str(fixture).unwrap();
+        let project = dir.path().join(format!("{name}.tinge"));
         run(json!({"command":"init","input":input,"project":project,"color_pipeline":pipeline}));
         let output = dir.path().join(format!("{name}.png"));
         let report = run(json!({"command":"render","project":project,"output":output}));
@@ -450,7 +447,7 @@ fn hdr_and_p3_projects_export_tagged_display_outputs_and_sdr_previews() {
             report["export"]["color_space"],
             json!({"primaries":primaries,"transfer":transfer})
         );
-        let metadata = vibecolor_io::inspect(&output).unwrap().color_metadata;
+        let metadata = tinge_io::inspect(&output).unwrap().color_metadata;
         if name == "hdr" {
             assert_eq!(metadata.cicp, Some([9, 16, 0, 1]));
         } else {
@@ -458,7 +455,7 @@ fn hdr_and_p3_projects_export_tagged_display_outputs_and_sdr_previews() {
         }
         let mut expected = frame.pixels.clone();
         pipeline.to_display(&mut expected).unwrap();
-        for (actual, expected) in vibecolor_io::load_signal(&output)
+        for (actual, expected) in tinge_io::load_signal(&output)
             .unwrap()
             .pixels
             .iter()
@@ -480,7 +477,7 @@ fn hdr_and_p3_projects_export_tagged_display_outputs_and_sdr_previews() {
             .unwrap()
             .to_display(&mut expected)
             .unwrap();
-        for (actual, expected) in vibecolor_io::load_signal(&preview)
+        for (actual, expected) in tinge_io::load_signal(&preview)
             .unwrap()
             .pixels
             .iter()
@@ -495,21 +492,21 @@ fn hdr_and_p3_projects_export_tagged_display_outputs_and_sdr_previews() {
             json!({"command":"render","project":project,"output":linear,"output_space":{"primaries":"aces_cg","transfer":"linear"}}),
         );
         assert_eq!(
-            vibecolor_io::inspect(&linear)
+            tinge_io::inspect(&linear)
                 .unwrap()
                 .color_metadata
                 .color_interop_id
                 .as_deref(),
             Some("lin_ap1_scene")
         );
-        let roundtrip = vibecolor_io::load(&linear, None).unwrap();
+        let roundtrip = tinge_io::load(&linear, None).unwrap();
         for (a, b) in roundtrip.pixels.iter().zip(&frame.pixels) {
             for c in 0..4 {
                 assert!((a[c] - b[c]).abs() < 3e-5);
             }
         }
         let invalid = dir.path().join(format!("{name}-mismatch.png"));
-        let result = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+        let result = Command::new(env!("CARGO_BIN_EXE_tinge"))
             .args([
                 "render",
                 project.to_str().unwrap(),
@@ -527,8 +524,8 @@ fn hdr_and_p3_projects_export_tagged_display_outputs_and_sdr_previews() {
 
 #[test]
 fn custom_config_projects_move_switch_context_restore_and_reject_tampered_cache() {
-    use vibecolor_color::{ColorSpace, Primaries, Transfer};
-    use vibecolor_ocio::{ConfigSource, PipelineConfig};
+    use tinge_color::{ColorSpace, Primaries, Transfer};
+    use tinge_ocio::{ConfigSource, PipelineConfig};
     let dir = tempfile::tempdir().unwrap();
     let studio = dir.path().join("studio");
     std::fs::create_dir(&studio).unwrap();
@@ -553,10 +550,10 @@ fn custom_config_projects_move_switch_context_restore_and_reject_tampered_cache(
     }
     let input = dir.path().join("scene.exr");
     let frame = Frame::new(2, 1, vec![[0.18, 0.4, 0.6, 1.0], [0.8, 0.1, 0.02, 1.0]]).unwrap();
-    vibecolor_io::export(
+    tinge_io::export(
         &frame,
         &input,
-        vibecolor_io::ExportOptions {
+        tinge_io::ExportOptions {
             bit_depth: 32,
             space: ColorSpace {
                 primaries: Primaries::Srgb,
@@ -566,18 +563,18 @@ fn custom_config_projects_move_switch_context_restore_and_reject_tampered_cache(
         },
     )
     .unwrap();
-    let mut pipeline: vibecolor_ocio::Pipeline =
+    let mut pipeline: tinge_ocio::Pipeline =
         serde_json::from_str(include_str!("../../../examples/custom-ocio/pipeline.json")).unwrap();
     pipeline.config = PipelineConfig::Source(ConfigSource::File {
         path: config.clone(),
     });
     let parent = dir.path().join("original");
     std::fs::create_dir(&parent).unwrap();
-    let project = parent.join("custom.vcolor");
+    let project = parent.join("custom.tinge");
     run(json!({"command":"init","input":input,"project":project,"color_pipeline":pipeline}));
     let warm = dir.path().join("warm.png");
     run(json!({"command":"render","project":project,"output":warm}));
-    let original = vibecolor_project::load(&project).unwrap();
+    let original = tinge_project::load(&project).unwrap();
     let hash = original.head().unwrap().recipe_hash.clone();
     let frozen = original.head().unwrap().color_pipeline.clone().unwrap();
     assert!(matches!(
@@ -591,12 +588,12 @@ fn custom_config_projects_move_switch_context_restore_and_reject_tampered_cache(
     }
     let moved = dir.path().join("moved");
     std::fs::rename(parent, &moved).unwrap();
-    let project = moved.join("custom.vcolor");
+    let project = moved.join("custom.tinge");
     let output = dir.path().join("moved.png");
     // A poisoned process environment must neither override authored defaults
     // nor the pipeline's explicit context.
     let request = json!({"command":"render","project":project,"output":output});
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args(["run", "-"])
         .env("GRADE", "missing-ambient-choice")
         .stdin(Stdio::piped())
@@ -623,7 +620,7 @@ fn custom_config_projects_move_switch_context_restore_and_reject_tampered_cache(
     let request = json!({"command":"ocio_transform","config":frozen.resolved_at(&moved).source(),
         "transform":{"type":"display_view","source":"linear","display":"Photo sRGB","view":"Standard"},
         "pixels":[[0.18,0.4,0.6,0.3]]});
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args(["run", "-"])
         .env("GRADE", "missing-ambient-choice")
         .stdin(Stdio::piped())
@@ -664,7 +661,7 @@ fn custom_config_projects_move_switch_context_restore_and_reject_tampered_cache(
     run(
         json!({"command":"apply","project":project,"expect_revision":0,"edits":[{"type":"set_color_pipeline","pipeline":neutral}]}),
     );
-    let p = vibecolor_project::load(&project).unwrap();
+    let p = tinge_project::load(&project).unwrap();
     assert_ne!(p.head().unwrap().recipe_hash, hash);
     let output = dir.path().join("neutral.png");
     run(json!({"command":"render","project":project,"output":output}));
@@ -676,10 +673,10 @@ fn custom_config_projects_move_switch_context_restore_and_reject_tampered_cache(
     let mut missing = frozen.clone();
     missing.context.insert("GRADE".into(), "missing".into());
     assert!(
-        vibecolor_project::transaction(
+        tinge_project::transaction(
             &project,
             1,
-            vec![vibecolor_project::Edit::SetColorPipeline {
+            vec![tinge_project::Edit::SetColorPipeline {
                 pipeline: Some(missing)
             }],
             "invalid".into(),
@@ -696,8 +693,8 @@ fn custom_config_projects_move_switch_context_restore_and_reject_tampered_cache(
         std::fs::read(output).unwrap()
     );
     // Revalidate the package even when the engine already cached decoded pixels.
-    let p = vibecolor_project::load(&project).unwrap();
-    let mut engine = vibecolor_engine::Engine::new();
+    let p = tinge_project::load(&project).unwrap();
+    let mut engine = tinge_engine::Engine::new();
     engine
         .project_render(
             &project,
@@ -711,7 +708,7 @@ fn custom_config_projects_move_switch_context_restore_and_reject_tampered_cache(
         &p.head().unwrap().color_pipeline.as_ref().unwrap().config
     {
         std::fs::write(
-            vibecolor_project::resolve(&moved, &path.to_string_lossy()),
+            tinge_project::resolve(&moved, &path.to_string_lossy()),
             b"tampered",
         )
         .unwrap();

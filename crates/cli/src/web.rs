@@ -14,8 +14,8 @@ use std::{
     },
     time::Duration,
 };
-use vibecolor_engine::Engine;
-use vibecolor_project::{self as project, Project};
+use tinge_engine::Engine;
+use tinge_project::{self as project, Project};
 
 const MAX_BODY: usize = 1024 * 1024;
 const IMAGE_BUDGET: usize = 128 * 1024 * 1024;
@@ -208,7 +208,7 @@ fn authenticate(request: &HttpRequest, server: &Server) -> Result<()> {
     );
     if request.method == "POST" {
         ensure!(
-            request.header("x-vibecolor") == Some(server.token.as_str()),
+            request.header("x-tinge") == Some(server.token.as_str()),
             "missing viewer token"
         );
         ensure!(
@@ -257,7 +257,7 @@ struct Finalize {
 struct SelectionSave {
     expect_revision: u64,
     job: u64,
-    mask: vibecolor_core::Mask,
+    mask: tinge_core::Mask,
     #[serde(default)]
     note: String,
 }
@@ -584,7 +584,7 @@ fn render(
         let pipeline = pipeline.map(|p| p.for_preview()).transpose()?;
         let name = format!("{}-{label}.png", work.id);
         let (bytes, report, transform) =
-            vibecolor_engine::preview_png_bytes(&preview, pipeline.as_ref())?;
+            tinge_engine::preview_png_bytes(&preview, pipeline.as_ref())?;
         ensure!(
             bytes.len() <= IMAGE_BUDGET / 2,
             "preview exceeds 64MiB; use a smaller max_edge"
@@ -681,7 +681,7 @@ pub fn serve(path: PathBuf, port: u16, open: bool) -> Result<()> {
     let worker_path = path.clone();
     let worker_jobs = jobs.clone();
     std::thread::Builder::new()
-        .name("vibecolor-preview".into())
+        .name("tinge-preview".into())
         .spawn(move || worker(worker_path, worker_jobs, worker_queue))?;
     let server = Arc::new(Server {
         project: path.clone(),
@@ -696,7 +696,7 @@ pub fn serve(path: PathBuf, port: u16, open: bool) -> Result<()> {
         let server = server.clone();
         let incoming = incoming.clone();
         std::thread::Builder::new()
-            .name(format!("vibecolor-http-{n}"))
+            .name(format!("tinge-http-{n}"))
             .spawn(move || {
                 loop {
                     let stream = incoming.lock().unwrap().recv();
@@ -813,7 +813,7 @@ mod tests {
             headers: BTreeMap::from([
                 ("host".into(), "127.0.0.1:1234".into()),
                 ("content-type".into(), "application/json".into()),
-                ("x-vibecolor".into(), "secret".into()),
+                ("x-tinge".into(), "secret".into()),
             ]),
             body: vec![],
         };
@@ -823,7 +823,7 @@ mod tests {
             .insert("origin".into(), "https://foreign.test".into());
         assert!(authenticate(&request, &server).is_err());
         request.headers.remove("origin");
-        request.headers.remove("x-vibecolor");
+        request.headers.remove("x-tinge");
         assert!(authenticate(&request, &server).is_err());
         request.method = "GET".into();
         request

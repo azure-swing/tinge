@@ -9,7 +9,7 @@ async function api(path, body) {
   const timer = setTimeout(() => controller.abort(), 15000);
   let response, value;
   try {
-    response = await fetch(`api/${path}`, { ...(body === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-VibeColor': token }, body: JSON.stringify(body) }), signal: controller.signal });
+    response = await fetch(`api/${path}`, { ...(body === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Tinge': token }, body: JSON.stringify(body) }), signal: controller.signal });
     value = await response.json();
   } catch (cause) {
     const error = new Error(controller.signal.aborted ? '本地引擎响应超时，请检查预览服务。保存操作请先核对版本记录。' : '本地预览服务已断开，请重新启动服务并打开新的预览地址。');

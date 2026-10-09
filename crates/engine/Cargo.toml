@@ -1,5 +1,5 @@
 [package]
-name = "vibecolor-engine"
+name = "tinge-engine"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,11 +11,11 @@ serde.workspace = true
 serde_json.workspace = true
 blake3.workspace = true
 rayon.workspace = true
-vibecolor-core.workspace = true
-vibecolor-color.workspace = true
-vibecolor-io.workspace = true
-vibecolor-project.workspace = true
-vibecolor-ocio.workspace = true
+tinge-core.workspace = true
+tinge-color.workspace = true
+tinge-io.workspace = true
+tinge-project.workspace = true
+tinge-ocio.workspace = true
 
 tempfile.workspace = true
 schemars.workspace = true

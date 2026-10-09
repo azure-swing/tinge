@@ -1,7 +1,7 @@
 use serde_json::json;
 use std::sync::atomic::AtomicBool;
-use vibecolor_color::from_display;
-use vibecolor_core::{
+use tinge_color::from_display;
+use tinge_core::{
     Frame,
     cutout::{self, CutoutOptions},
     recipe::Recipe,

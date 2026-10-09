@@ -16,13 +16,13 @@ use std::{
     io::{self, Read},
     path::{Path, PathBuf},
 };
-use vibecolor_color::ColorSpace;
-use vibecolor_core::Recipe;
-use vibecolor_project::Edit;
+use tinge_color::ColorSpace;
+use tinge_core::Recipe;
+use tinge_project::Edit;
 
 #[derive(Parser)]
 #[command(
-    name = "vibecolor",
+    name = "tinge",
     version,
     about = "Agent-native, non-destructive float32 image grading. JSON on stdout."
 )]
@@ -331,8 +331,8 @@ fn space(text: Option<String>) -> Result<Option<ColorSpace>> {
     })
     .transpose()
 }
-fn read_pipeline(path: &Path) -> Result<vibecolor_ocio::Pipeline> {
-    let pipeline: vibecolor_ocio::Pipeline = read_json(path)?;
+fn read_pipeline(path: &Path) -> Result<tinge_ocio::Pipeline> {
+    let pipeline: tinge_ocio::Pipeline = read_json(path)?;
     Ok(pipeline.resolved_at(&origin(path)?))
 }
 #[derive(Clone, Copy, ValueEnum)]
@@ -353,12 +353,12 @@ fn command_request(cmd: Command) -> Result<Request> {
         } => Request::CdlImport {
             input,
             selector: id
-                .map(|id| vibecolor_ocio::cdl::CdlSelector::Id { id })
-                .or_else(|| index.map(|index| vibecolor_ocio::cdl::CdlSelector::Index { index })),
+                .map(|id| tinge_ocio::cdl::CdlSelector::Id { id })
+                .or_else(|| index.map(|index| tinge_ocio::cdl::CdlSelector::Index { index })),
             color_space,
             style: match style {
-                CdlStyleArg::Asc => vibecolor_ocio::CdlStyle::Asc,
-                CdlStyleArg::NoClamp => vibecolor_ocio::CdlStyle::NoClamp,
+                CdlStyleArg::Asc => tinge_ocio::CdlStyle::Asc,
+                CdlStyleArg::NoClamp => tinge_ocio::CdlStyle::NoClamp,
             },
             inverse,
         },
@@ -464,9 +464,9 @@ fn command_request(cmd: Command) -> Result<Request> {
             context,
         } => Request::OcioInspect {
             config: if let Some(name) = builtin {
-                vibecolor_ocio::ConfigSource::Builtin { name }
+                tinge_ocio::ConfigSource::Builtin { name }
             } else {
-                vibecolor_ocio::ConfigSource::File {
+                tinge_ocio::ConfigSource::File {
                     path: config_file.context("missing OCIO config")?,
                 }
             },

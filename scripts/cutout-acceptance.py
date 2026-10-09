@@ -14,7 +14,7 @@ import cv2
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
-CLI = ROOT / "target/release/vibecolor.exe"
+CLI = ROOT / "target/release/tinge.exe"
 ART = ROOT / "artifacts"
 SOURCE = ROOT / "target/cutout-corpus/astronaut.png"
 URL = "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/astronaut.png"

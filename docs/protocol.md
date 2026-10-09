@@ -4,7 +4,7 @@
 
 ## 请求与结果
 
-CLI `run`、JSONL `serve` 继续使用带 `command` 的 `Request` 枚举。MCP 改为独立 `vibecolor_<操作>` 工具，参数不含 command；`tools/list` 为每项操作直接给出完整 schema、描述和 readOnlyHint/destructiveHint/openWorldHint。后台操作使用 `vibecolor_submit_<操作>`，参数与同步操作相同并增加可选 idempotency_key。通用 MCP 执行器、batch、job_submit 不再接受。以下带 command 的示例均为 CLI/JSONL 格式；MCP 使用对应工具并去掉 command。`vibecolor_schema` 只用于补充查看配方/算子结构，不是执行前提。
+CLI `run`、JSONL `serve` 继续使用带 `command` 的 `Request` 枚举。MCP 改为独立 `tinge_<操作>` 工具，参数不含 command；`tools/list` 为每项操作直接给出完整 schema、描述和 readOnlyHint/destructiveHint/openWorldHint。后台操作使用 `tinge_submit_<操作>`，参数与同步操作相同并增加可选 idempotency_key。通用 MCP 执行器、batch、job_submit 不再接受。以下带 command 的示例均为 CLI/JSONL 格式；MCP 使用对应工具并去掉 command。`tinge_schema` 只用于补充查看配方/算子结构，不是执行前提。
 
 ```json
 {"command":"capabilities"}
@@ -19,7 +19,7 @@ CLI `run`、JSONL `serve` 继续使用带 `command` 的 `Request` 枚举。MCP �
 ```json
 {
   "command":"apply",
-  "project":"portrait.vcolor",
+  "project":"portrait.tinge",
   "expect_revision":0,
   "label":"Lift the subject",
   "edits":[
@@ -59,9 +59,9 @@ CLI `run`、JSONL `serve` 继续使用带 `command` 的 `Request` 枚举。MCP �
 本地 Web 界面由 `view <project> [--no-open] [--port N]` 启动；它只提供看图/圈划/对比/版本保存。CLI `selections <project>` 或请求 `selections {project}` 返回独立批注记录。`selection_save {project,expect_revision,revision?,mask,note?}` 执行原生渲染获取输出基准，再原子追加 `.selections.json`，不会改调色图或 revision。记录包含源/配方 hash、输出节点、全尺寸和归一化 Mask；不接受外部 bitmap/颜色 qualifier。agent 必须核对坐标基准再创建局部节点，不能盲目套用旧修订选区。详见 [Web 查看器工作流](viewer-workflow.md)。
 
 ```json
-{"command":"preview","project":"portrait.vcolor","output":"preview.png","max_edge":1600}
-{"command":"compare","project":"portrait.vcolor","output":"compare.png"}
-{"command":"stats","project":"portrait.vcolor","scopes":true}
+{"command":"preview","project":"portrait.tinge","output":"preview.png","max_edge":1600}
+{"command":"compare","project":"portrait.tinge","output":"compare.png"}
+{"command":"stats","project":"portrait.tinge","scopes":true}
 ```
 
 预览先按全分辨率执行配方，再缩小；pixel radius 和 crop 参数不因 max_edge 改变。启用 color_pipeline 时执行固定 OCIO sRGB display/view，其他情况为普通 sRGB 编码，最终整数输出裁剪越界并报告。compare 左为同一修订的源图开发结果（旁路节点图）、右为节点图结果，两边使用相同 RAW 设置、输入/显示链，独立适配 max_edge，几何改变后可能尺寸不同。init/grade/analyze 支持 color_pipeline，set_color_pipeline 事务支持修订/关闭；详见 color-pipeline.md。
@@ -97,6 +97,6 @@ Engine 的内容 key 包含源像素、算子、上游 key、mask 参数与 LUT/
 
 OCIO 节点还包含实际 config/processor cache ID、显式 context、引用元数据和锚点 working_encoding。editable 配置在每次请求重新加载，依赖缺失先报错，LUT 更新使节点缓存失效；frozen 配置仍检查包 hash。`--progress` 的 OCIO 节点记录额外 ocio_transform，即使节点命中缓存也返回实际处理身份；禁用节点不报告已应用变换。
 
-`--progress` 按完成节点输出 completed/total/cached/elapsed_ms。旧命令仍同步执行；CLI/JSONL 的 `job_submit` 或 MCP 的 `vibecolor_submit_<操作>` 将耗时操作交给一个有界后台工作线程，同一 stdin 可继续查询/取消任务。取消在引擎检查点生效，RAW 解码、部分空间算子和导出不能即时打断。任务/幂等 key 属于当前会话，持久任务与重启恢复尚未实现。缓存默认闲置 60 秒后释放；`configure` 调整主引擎和任务引擎各自的预算/闲置期限，`cache_info` 查询实际缓存像素字节。预算不限制整个进程的峰值内存。详见 [Agent 工作流](agent-workflow.md)。
+`--progress` 按完成节点输出 completed/total/cached/elapsed_ms。旧命令仍同步执行；CLI/JSONL 的 `job_submit` 或 MCP 的 `tinge_submit_<操作>` 将耗时操作交给一个有界后台工作线程，同一 stdin 可继续查询/取消任务。取消在引擎检查点生效，RAW 解码、部分空间算子和导出不能即时打断。任务/幂等 key 属于当前会话，持久任务与重启恢复尚未实现。缓存默认闲置 60 秒后释放；`configure` 调整主引擎和任务引擎各自的预算/闲置期限，`cache_info` 查询实际缓存像素字节。预算不限制整个进程的峰值内存。详见 [Agent 工作流](agent-workflow.md)。
 
 batch 输入是 request 数组，结果按 index 记录。默认继续处理其他项目；stop_on_error 可提前结束。batch 不是跨项目事务，之前成功的文件/提交保留。普通 CLI batch 任意失败退出码 1；JSONL 报告逐项失败；MCP 不暴露通用 batch。JSONL 没有 request ID 多路复用，严格按行顺序返回。

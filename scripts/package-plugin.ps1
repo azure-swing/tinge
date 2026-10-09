@@ -3,27 +3,24 @@ $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Push-Location -LiteralPath $taskRoot
 try {
-    $binary = if ($Executable) { [System.IO.Path]::GetFullPath($Executable) } else { Join-Path $taskRoot 'target/release/vibecolor.exe' }
+    $binary = if ($Executable) { [System.IO.Path]::GetFullPath($Executable) } else { Join-Path $taskRoot 'target/release/tinge.exe' }
     if (-not $SkipBuild) {
-        # Emit a fresh binary so active MCP sessions can keep their executable.
-        $binary = Join-Path $taskRoot ('target/release/vibecolor-plugin-' + [guid]::NewGuid().ToString('N') + '.exe')
-        & cargo rustc --release --locked -p vibecolor-cli --bin vibecolor -- "--emit=link=$binary"
+        & cargo build --release --locked
         if ($LASTEXITCODE -ne 0) { throw 'Release build failed' }
     }
     if (-not (Test-Path -LiteralPath $binary)) { throw 'Build the Windows release binary first' }
-    # A fresh package avoids retaining stale files from an earlier version.
-    $packageRoot = Join-Path $taskRoot ('target/plugin-' + [guid]::NewGuid().ToString('N'))
+    $packageRoot = Join-Path $taskRoot 'target/plugin-package'
     $package = Join-Path $packageRoot 'tinge'
-    New-Item -ItemType Directory -Path $package | Out-Null
-    Get-ChildItem -LiteralPath (Join-Path $taskRoot 'plugin') -Force | Copy-Item -Destination $package -Recurse
+    New-Item -ItemType Directory -Path $package -Force | Out-Null
+    Get-ChildItem -LiteralPath (Join-Path $taskRoot 'plugin') -Force | Copy-Item -Destination $package -Recurse -Force
     $binDirectory = Join-Path $package 'bin'
-    New-Item -ItemType Directory -Path $binDirectory | Out-Null
-    Copy-Item -LiteralPath $binary -Destination (Join-Path $binDirectory 'vibecolor.exe')
+    New-Item -ItemType Directory -Path $binDirectory -Force | Out-Null
+    Copy-Item -LiteralPath $binary -Destination (Join-Path $binDirectory 'tinge.exe')
     foreach ($name in @('LICENSE', 'THIRD_PARTY.md')) {
         Copy-Item -LiteralPath (Join-Path $taskRoot $name) -Destination $package
     }
     $referenceDirectory = Join-Path $package 'skills/photo-workflow/references'
-    New-Item -ItemType Directory -Path $referenceDirectory | Out-Null
+    New-Item -ItemType Directory -Path $referenceDirectory -Force | Out-Null
     Get-ChildItem -LiteralPath (Join-Path $taskRoot 'docs') -Filter '*.md' | Copy-Item -Destination $referenceDirectory
     $marketplaceDirectory = Join-Path $packageRoot '.agents/plugins'
     New-Item -ItemType Directory -Path $marketplaceDirectory -Force | Out-Null

@@ -8,7 +8,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
-use vibecolor_project as project;
+use tinge_project as project;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -85,7 +85,7 @@ fn read(path: &Path, source: &str) -> Result<Document> {
     Ok(doc)
 }
 fn save(path: &Path, doc: &Document) -> Result<()> {
-    vibecolor_io::atomic_bytes(
+    tinge_io::atomic_bytes(
         &sidecar(path, ".workfiles.json"),
         &serde_json::to_vec(doc)?,
         true,
@@ -171,7 +171,7 @@ pub fn register(path: &Path, file: &Path, revision: u64, role: Role) -> Result<V
         .to_string_lossy()
         .into_owned();
     candidate_path(&path, &p, &relative)?;
-    let hash = vibecolor_io::hash_file(&file)?;
+    let hash = tinge_io::hash_file(&file)?;
     ensure!(
         hash != p.source.hash,
         "source originals cannot be registered as workfiles"
@@ -207,7 +207,7 @@ fn plan(path: &Path, p: &project::Project, doc: &Document, revision: u64) -> Val
         }
         match candidate_path(path, p, &entry.path).and_then(|file| {
             ensure!(
-                vibecolor_io::hash_file(&file)? == entry.hash,
+                tinge_io::hash_file(&file)? == entry.hash,
                 "file changed since registration"
             );
             Ok(file)
@@ -272,7 +272,7 @@ fn finalize_with(
             let stored = item["stored_path"].as_str().unwrap();
             let result = candidate_path(&path, p, stored).and_then(|file| {
                 ensure!(
-                    vibecolor_io::hash_file(&file)? == item["hash"].as_str().unwrap(),
+                    tinge_io::hash_file(&file)? == item["hash"].as_str().unwrap(),
                     "file changed before recycling"
                 );
                 recycle_file(&file)?;
@@ -407,9 +407,9 @@ mod tests {
     fn fixture() -> (tempfile::TempDir, PathBuf) {
         let dir = tempfile::tempdir().unwrap();
         let source = dir.path().join("source.png");
-        let frame = vibecolor_core::Frame::new(3, 2, vec![[0.2, 0.3, 0.4, 1.0]; 6]).unwrap();
-        vibecolor_io::export(&frame, &source, Default::default()).unwrap();
-        let path = dir.path().join("test.vcolor");
+        let frame = tinge_core::Frame::new(3, 2, vec![[0.2, 0.3, 0.4, 1.0]; 6]).unwrap();
+        tinge_io::export(&frame, &source, Default::default()).unwrap();
+        let path = dir.path().join("test.tinge");
         project::init(&path, &source, None).unwrap();
         project::tag(&path, 0, "draft".into()).unwrap();
         (dir, path)

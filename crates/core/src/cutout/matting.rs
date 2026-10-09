@@ -256,7 +256,7 @@ pub(super) fn upsample(
                 p[2] as f64 / scale,
             ]
         } else {
-            vibecolor_color::to_display([p[0], p[1], p[2]]).map(|v| v.clamp(0.0, 1.0) as f64)
+            tinge_color::to_display([p[0], p[1], p[2]]).map(|v| v.clamp(0.0, 1.0) as f64)
         }
     };
     let colors: Vec<_> = small.pixels.iter().map(encode).collect();

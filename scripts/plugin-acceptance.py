@@ -42,6 +42,7 @@ def main():
         tools = {t['name']: t for t in catalog}
         assert len(tools) == len(catalog)
         for tool in catalog:
+            assert tool['name'].startswith('tinge_'), tool['name']
             schema = tool['inputSchema']
             assert schema['type'] == 'object' and schema['additionalProperties'] is False
             assert not {'command', 'request', 'jobs'} & schema['properties'].keys()
@@ -50,11 +51,11 @@ def main():
             if tool['annotations']['readOnlyHint']:
                 assert not tool['annotations']['destructiveHint']
             refs(schema, schema)
-        for name in ('vibecolor_run', 'vibecolor_agent', 'vibecolor_job_submit', 'vibecolor_batch'):
+        for name in ('tinge_run', 'tinge_agent', 'tinge_job_submit', 'tinge_batch'):
             assert name not in tools
             response = client.rpc('tools/call', {'name': name, 'arguments': {'command': 'capabilities'}})
             assert response['isError'], response
-        response = client.rpc('tools/call', {'name': 'vibecolor_capabilities', 'arguments': {'command': 'finalize'}})
+        response = client.rpc('tools/call', {'name': 'tinge_capabilities', 'arguments': {'command': 'finalize'}})
         assert response['isError'], response
         fixtures = json.loads((Path(__file__).resolve().parents[1] / 'tests/plugin-prompts.json').read_text(encoding='utf-8'))['cases']
         for case in fixtures:
@@ -68,6 +69,7 @@ def main():
             assert manifest['version'] == client.data({'command': 'capabilities'})['version']
             wiring = json.loads((root / manifest['mcpServers']).read_text(encoding='utf-8'))['mcpServers']['tinge']
             executable = Path(wiring['command'].replace('${PLUGIN_ROOT}', str(root)))
+            assert executable.name == 'tinge.exe', executable
             assert executable.is_file() and wiring['args'] == ['mcp']
             skill = root / manifest['skills'] / 'photo-workflow/SKILL.md'
             assert skill.is_file()
@@ -80,7 +82,7 @@ def main():
             traces = {r['id']: r['calls'] for r in json.loads(args.traces.read_text(encoding='utf-8'))}
             assert set(traces) == {case['id'] for case in fixtures}, 'Replay every case'
             for case in fixtures:
-                calls = [call for call in traces[case['id']] if call['name'].startswith('vibecolor_')]
+                calls = [call for call in traces[case['id']] if call['name'].startswith('tinge_')]
                 if not case['expected_tools']:
                     assert not calls, case['id']
                 for group in case.get('required_any_groups', []):

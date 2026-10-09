@@ -24,12 +24,12 @@ image = { version = "0.25.10", default-features = false, features = ["png", "jpe
 clap = { version = "4.6", features = ["derive"] }
 tempfile = "3.23"
 fs2 = "0.4"
-vibecolor-core = { path = "crates/core" }
-vibecolor-color = { path = "crates/color" }
-vibecolor-io = { path = "crates/io" }
-vibecolor-project = { path = "crates/project" }
-vibecolor-engine = { path = "crates/engine" }
-vibecolor-ocio = { path = "crates/ocio" }
+tinge-core = { path = "crates/core" }
+tinge-color = { path = "crates/color" }
+tinge-io = { path = "crates/io" }
+tinge-project = { path = "crates/project" }
+tinge-engine = { path = "crates/engine" }
+tinge-ocio = { path = "crates/ocio" }
 
 [profile.release]
 lto = "thin"

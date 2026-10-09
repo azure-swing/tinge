@@ -1,5 +1,5 @@
 [package]
-name = "vibecolor-ocio"
+name = "tinge-ocio"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,7 +10,7 @@ anyhow.workspace = true
 blake3.workspace = true
 serde.workspace = true
 schemars.workspace = true
-vibecolor-color.workspace = true
+tinge-color.workspace = true
 ocio-rs = { version = "=0.2.1", features = ["bundled"] }
 tempfile.workspace = true
 roxmltree = "=0.21.1"

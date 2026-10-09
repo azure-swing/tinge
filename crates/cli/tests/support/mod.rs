@@ -9,5 +9,5 @@ pub fn call(id: u64, mut arguments: Value) -> Value {
         .unwrap();
     arguments["_response"] = json!("full");
     arguments["_inline_image"] = json!(true);
-    json!({"jsonrpc":"2.0","id":id,"method":"tools/call","params":{"name":format!("vibecolor_{}",command.as_str().unwrap()),"arguments":arguments}})
+    json!({"jsonrpc":"2.0","id":id,"method":"tools/call","params":{"name":format!("tinge_{}",command.as_str().unwrap()),"arguments":arguments}})
 }

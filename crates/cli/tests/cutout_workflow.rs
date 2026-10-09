@@ -3,10 +3,10 @@ use std::{
     io::Write,
     process::{Command, Stdio},
 };
-use vibecolor_core::Frame;
+use tinge_core::Frame;
 
 fn run(request: Value, success: bool) -> Value {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args(["run", "-"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -49,7 +49,7 @@ fn input(path: &std::path::Path) -> Frame {
             .collect(),
     )
     .unwrap();
-    vibecolor_io::export(&frame, path, vibecolor_io::ExportOptions::default()).unwrap();
+    tinge_io::export(&frame, path, tinge_io::ExportOptions::default()).unwrap();
     frame
 }
 #[test]
@@ -66,8 +66,8 @@ fn cutout_exports_exact_scalar_alpha_and_protects_inputs_and_outputs() {
     );
     assert_eq!(data["cutout"]["model_weights_required"], false);
     assert_eq!(data["matte_bit_depth"], 16);
-    let result = vibecolor_io::load(&output, None).unwrap();
-    let alpha = vibecolor_io::load_matte(&matte, 8, 8).unwrap();
+    let result = tinge_io::load(&output, None).unwrap();
+    let alpha = tinge_io::load_matte(&matte, 8, 8).unwrap();
     for (i, (p, a)) in result.pixels.iter().zip(&alpha).enumerate() {
         assert_eq!(p[3], *a);
         assert!((*a - if i % 8 < 4 { 0.5 } else { 0.0 }).abs() < 1.0 / 65535.0);
@@ -78,7 +78,7 @@ fn cutout_exports_exact_scalar_alpha_and_protects_inputs_and_outputs() {
             json!({"command":"cutout","input":source,"output":dest,"options":opts}),
             true,
         );
-        let decoded = vibecolor_io::load(&dest, None).unwrap();
+        let decoded = tinge_io::load(&dest, None).unwrap();
         for (p, a) in decoded.pixels.iter().zip(&alpha) {
             assert!((p[3] - a).abs() < 1e-6);
         }
@@ -128,10 +128,10 @@ fn cutout_project_freezes_mattes_restores_revisions_and_rejects_tampering() {
     let dir = tempfile::tempdir().unwrap();
     let source = dir.path().join("input.png");
     input(&source);
-    let path = dir.path().join("key.vcolor");
+    let path = dir.path().join("key.tinge");
     let external = dir.path().join("matte.png");
     let f = Frame::new(8, 8, vec![[0., 0., 0., 0.5]; 64]).unwrap();
-    vibecolor_io::export_matte(&f, &external, 16, false).unwrap();
+    tinge_io::export_matte(&f, &external, 16, false).unwrap();
     run(
         json!({"command":"init","input":source,"project":path}),
         true,
@@ -147,7 +147,7 @@ fn cutout_project_freezes_mattes_restores_revisions_and_rejects_tampering() {
         .as_str()
         .unwrap();
     assert!(path.parent().unwrap().join(asset).exists());
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .arg("serve")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -168,7 +168,7 @@ fn cutout_project_freezes_mattes_restores_revisions_and_rejects_tampering() {
         .collect();
     assert!(responses.iter().all(|r| r["ok"] == true));
     let frames: Vec<_> = (0..4)
-        .map(|i| vibecolor_io::load(&dir.path().join(format!("r{i}.png")), None).unwrap())
+        .map(|i| tinge_io::load(&dir.path().join(format!("r{i}.png")), None).unwrap())
         .collect();
     assert_eq!(frames[0].pixels, frames[2].pixels);
     assert_eq!(frames[1].pixels, frames[3].pixels);
@@ -189,7 +189,7 @@ fn cutout_project_freezes_mattes_restores_revisions_and_rejects_tampering() {
         false,
     );
     // Alpha-changing nodes mix in premultiplied space: a half key retains foreground RGB.
-    let mix = dir.path().join("mix.vcolor");
+    let mix = dir.path().join("mix.tinge");
     let src = dir.path().join("again.png");
     input(&src);
     run(json!({"command":"init","input":src,"project":mix}), true);
@@ -199,7 +199,7 @@ fn cutout_project_freezes_mattes_restores_revisions_and_rejects_tampering() {
     );
     let out = dir.path().join("mix.png");
     run(json!({"command":"render","project":mix,"output":out}), true);
-    let f = vibecolor_io::load(&out, None).unwrap();
+    let f = tinge_io::load(&out, None).unwrap();
     assert!((f.pixels[7][1] - 1.0).abs() < 5e-5, "{:?}", f.pixels[7]);
     assert!((f.pixels[7][3] - 0.5).abs() < 1.0 / 65535.0);
 }
@@ -211,7 +211,7 @@ fn cutout_native_command_mcp_and_schema_are_available() {
     let opts = dir.path().join("options.json");
     std::fs::write(&opts, r#"{"selection":{"type":"color","color":[0,1,0]}}"#).unwrap();
     let output = dir.path().join("native.png");
-    let out = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let out = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .arg("cutout")
         .arg(&source)
         .arg("--options")
@@ -228,7 +228,7 @@ fn cutout_native_command_mcp_and_schema_are_available() {
     assert!(output.exists());
     let schema = run(json!({"command":"schema"}), true);
     assert!(schema.to_string().contains("\"cutout\""));
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .arg("mcp")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -238,7 +238,7 @@ fn cutout_native_command_mcp_and_schema_are_available() {
     let mut stdin = child.stdin.take().unwrap();
     writeln!(stdin,"{}",json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}})).unwrap();
     let output = dir.path().join("mcp.png");
-    writeln!(stdin,"{}",json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"vibecolor_cutout","arguments":{"input":source,"output":output,"options":{"selection":{"type":"color","color":[0,1,0]}}}}})).unwrap();
+    writeln!(stdin,"{}",json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"tinge_cutout","arguments":{"input":source,"output":output,"options":{"selection":{"type":"color","color":[0,1,0]}}}}})).unwrap();
     drop(stdin);
     let out = child.wait_with_output().unwrap();
     assert!(out.status.success());

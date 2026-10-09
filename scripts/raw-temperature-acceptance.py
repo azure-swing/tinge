@@ -13,7 +13,7 @@ import OpenEXR
 import numpy as np
 from PIL import Image,ImageDraw
 
-exe=root/'target/release/vibecolor.exe'
+exe=root/'target/release/tinge.exe'
 artifacts=root/'artifacts'
 source=root/'target/raw-corpus/canon-400d.cr2'
 pipeline=json.loads((root/'examples/aces2-srgb.json').read_text(encoding='utf-8'))
@@ -43,7 +43,7 @@ for kelvin,duv in [(3500,0),(6504,0),(9000,0),(6504,-0.005),(6504,0.005)]:
     cases.append({'options':options,'plan':plan,'export':image})
 
 # Real project applies temperature, renders in a persistent session, and restores it.
-project=artifacts/'raw-temperature-demo.vcolor'
+project=artifacts/'raw-temperature-demo.tinge'
 if not project.exists():run({'command':'init','input':str(source),'project':str(project),'raw_develop':{},'color_pipeline':pipeline})
 state=run({'command':'show','project':str(project)});start=state['revision']
 edited=run({'command':'apply','project':str(project),'expect_revision':start,

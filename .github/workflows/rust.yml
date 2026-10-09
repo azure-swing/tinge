@@ -28,7 +28,7 @@ jobs:
       - name: Agent protocol acceptance
         shell: pwsh
         run: |
-          $exe = if ($IsWindows) { 'target/release/vibecolor.exe' } else { 'target/release/vibecolor' }
+          $exe = if ($IsWindows) { 'target/release/tinge.exe' } else { 'target/release/tinge' }
           python scripts/plugin-acceptance.py --executable $exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/agent-acceptance.py --executable $exe

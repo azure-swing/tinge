@@ -27,7 +27,7 @@ args = argparse.ArgumentParser()
 args.add_argument('--download', action='store_true')
 args = args.parse_args()
 artifacts = root / 'artifacts'
-exe = root / 'target/release/vibecolor.exe'
+exe = root / 'target/release/tinge.exe'
 manifest = json.loads((artifacts / 'raw-corpus-manifest.json').read_text(encoding='utf-8'))
 pipeline = json.loads((root / 'examples/aces2-srgb.json').read_text())
 
@@ -121,9 +121,9 @@ for sample in manifest['samples']:
                       'wb_source': plan['white_balance_source']}, ensure_ascii=False), flush=True)
 
 # A real project keeps RAW controls revision-local and source independent of the import path.
-project = artifacts / 'raw-corpus-demo.vcolor'
+project = artifacts / 'raw-corpus-demo.tinge'
 if not project.exists():
-    with tempfile.TemporaryDirectory(prefix='vibecolor-raw-') as temp:
+    with tempfile.TemporaryDirectory(prefix='tinge-raw-') as temp:
         input_copy = Path(temp) / 'source.cr2'
         shutil.copyfile(root / manifest['samples'][0]['path'], input_copy)
         run({'command': 'init', 'input': str(input_copy), 'project': str(project),

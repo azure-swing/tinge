@@ -5,17 +5,34 @@ use std::{
     process::{Command, Stdio},
 };
 fn exe() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    Command::new(env!("CARGO_BIN_EXE_tinge"))
+}
+
+#[test]
+fn native_command_identifies_as_tinge() {
+    let version = exe().arg("--version").output().unwrap();
+    assert!(version.status.success());
+    assert_eq!(
+        String::from_utf8(version.stdout).unwrap().trim(),
+        concat!("tinge ", env!("CARGO_PKG_VERSION"))
+    );
+    let help = exe().arg("--help").output().unwrap();
+    assert!(help.status.success());
+    assert!(
+        String::from_utf8(help.stdout)
+            .unwrap()
+            .contains("Usage: tinge")
+    );
 }
 
 #[test]
 fn committed_edit_with_failed_preview_is_reported_by_cli_jsonl_and_batch() {
     let dir = tempfile::tempdir().unwrap();
     let source = dir.path().join("source.png");
-    let project = dir.path().join("image.vcolor");
-    let frame = vibecolor_core::Frame::new(2, 1, vec![[0.1, 0.2, 0.3, 1.0]; 2]).unwrap();
-    vibecolor_io::export(&frame, &source, Default::default()).unwrap();
-    vibecolor_project::init(&project, &source, None).unwrap();
+    let project = dir.path().join("image.tinge");
+    let frame = tinge_core::Frame::new(2, 1, vec![[0.1, 0.2, 0.3, 1.0]; 2]).unwrap();
+    tinge_io::export(&frame, &source, Default::default()).unwrap();
+    tinge_project::init(&project, &source, None).unwrap();
     for (index, args) in [vec!["run", "-"], vec!["serve"], vec!["run", "-"]]
         .iter()
         .enumerate()
@@ -50,7 +67,7 @@ fn committed_edit_with_failed_preview_is_reported_by_cli_jsonl_and_batch() {
         assert_eq!(data["committed"], true);
         assert_eq!(data["revision"], index + 1);
         assert_eq!(
-            vibecolor_project::load(&project).unwrap().revision,
+            tinge_project::load(&project).unwrap().revision,
             index as u64 + 1
         );
         assert!(output.is_dir());
@@ -83,10 +100,10 @@ fn nested_batch_failure_propagates_and_stops() {
 fn cli_project_lifecycle_and_json_protocol() {
     let dir = tempfile::tempdir().unwrap();
     let source = dir.path().join("input.png");
-    let project = dir.path().join("image.vcolor");
+    let project = dir.path().join("image.tinge");
     let out = dir.path().join("preview.png");
-    let frame = vibecolor_core::Frame::new(2, 1, vec![[0.1, 0.2, 0.3, 1.0]; 2]).unwrap();
-    vibecolor_io::export(&frame, &source, Default::default()).unwrap();
+    let frame = tinge_core::Frame::new(2, 1, vec![[0.1, 0.2, 0.3, 1.0]; 2]).unwrap();
+    tinge_io::export(&frame, &source, Default::default()).unwrap();
     let p = exe()
         .arg("init")
         .arg(&source)
@@ -149,7 +166,7 @@ fn cli_project_lifecycle_and_json_protocol() {
         .output()
         .unwrap();
     assert!(!r.status.success());
-    assert_eq!(vibecolor_project::load(&project).unwrap().revision, 1);
+    assert_eq!(tinge_project::load(&project).unwrap().revision, 1);
     let r = exe()
         .arg("restore")
         .arg(&project)
@@ -158,17 +175,17 @@ fn cli_project_lifecycle_and_json_protocol() {
         .output()
         .unwrap();
     assert!(r.status.success());
-    assert_eq!(vibecolor_project::load(&project).unwrap().revision, 2);
+    assert_eq!(tinge_project::load(&project).unwrap().revision, 2);
 }
 #[test]
 fn mcp_stdio_roundtrip_and_preview_image_resource() {
     let dir = tempfile::tempdir().unwrap();
     let source = dir.path().join("input.png");
-    let project = dir.path().join("image.vcolor");
+    let project = dir.path().join("image.tinge");
     let preview = dir.path().join("preview.png");
-    let frame = vibecolor_core::Frame::new(1, 1, vec![[0.18, 0.18, 0.18, 1.0]]).unwrap();
-    vibecolor_io::export(&frame, &source, Default::default()).unwrap();
-    vibecolor_project::init(&project, &source, None).unwrap();
+    let frame = tinge_core::Frame::new(1, 1, vec![[0.18, 0.18, 0.18, 1.0]]).unwrap();
+    tinge_io::export(&frame, &source, Default::default()).unwrap();
+    tinge_project::init(&project, &source, None).unwrap();
     let messages = [
         json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}),
         json!({"jsonrpc":"2.0","method":"notifications/initialized"}),

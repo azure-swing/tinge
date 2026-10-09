@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
-use vibecolor_color::{from_display, to_display};
+use tinge_color::{from_display, to_display};
 
 fn tolerance() -> f32 {
     0.08

@@ -74,7 +74,7 @@ pub enum Operation {
     },
     /// Native OCIO grade in an explicit process space; requires color_pipeline.
     OcioGrade {
-        grade: vibecolor_ocio::NodeGrade,
+        grade: tinge_ocio::NodeGrade,
     },
     Exposure {
         stops: f32,

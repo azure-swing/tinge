@@ -5,7 +5,7 @@
 ## 检查与导入
 
 ```powershell
-$vc = '.\target\release\vibecolor.exe'
+$vc = '.\target\release\tinge.exe'
 & $vc cdl-inspect examples/cdl/looks.ccc
 & $vc cdl-import examples/cdl/looks.ccc --id 1 --color-space ACEScct --style no-clamp
 ```
@@ -28,7 +28,7 @@ $edits = @(
   @{type='upsert_node'; node=@{id='imported_cdl'; op=$entry.data.op}},
   @{type='set_output'; id='imported_cdl'}
 ) | ConvertTo-Json -Depth 100
-$edits | & $vc apply photo.vcolor --expect-revision 0 --edits - --label 'Import CDL'
+$edits | & $vc apply photo.tinge --expect-revision 0 --edits - --label 'Import CDL'
 ```
 
 项目须有有效的 color_pipeline，比如 `examples/aces2-srgb.json`。import 只检查参数/名称，不假定配置；apply 会实际编译具名处理空间，失败不提交。节点间仍交换 canonical linear sRGB；OCIO 在节点内部转入 ACEScct 等处理域再返回，mask/mix 随后作用。
@@ -38,7 +38,7 @@ $edits | & $vc apply photo.vcolor --expect-revision 0 --edits - --label 'Import 
 ## 导出
 
 ```powershell
-& $vc cdl-export --project photo.vcolor --revision 1 --nodes imported_cdl --output saved.ccc
+& $vc cdl-export --project photo.tinge --revision 1 --nodes imported_cdl --output saved.ccc
 & $vc cdl-export --document examples/cdl/document.json --output saved.cc
 ```
 

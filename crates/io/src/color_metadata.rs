@@ -1,7 +1,7 @@
 //! File colorimetry and deterministic output ICC definitions.
 use anyhow::{Result, bail, ensure};
 use std::{borrow::Cow, fs::File, io::BufReader, path::Path};
-use vibecolor_color::{ColorSpace, Primaries, Transfer};
+use tinge_color::{ColorSpace, Primaries, Transfer};
 
 pub fn rgb_profile(space: ColorSpace) -> Result<moxcms::ColorProfile> {
     let mut profile = match space.primaries {

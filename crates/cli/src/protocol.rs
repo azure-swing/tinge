@@ -212,7 +212,7 @@ pub fn handle(session: &mut Session, message: Value, initialized: &mut bool) -> 
             *initialized = true;
             session.persistent = true;
             Ok(
-                json!({"protocolVersion":protocol,"capabilities":{"tools":{},"resources":{}},"serverInfo":{"name":"vibecolor","version":env!("CARGO_PKG_VERSION")},"instructions":"Use the individually exposed VibeColor tools and their complete input schemas. Read project_info before revision-checked edits. submit_edit_preview queues only edit_preview; inspect job_status and committed revision even when preview fails or cancellation is requested. Jobs and retry keys are session-local; after reconnect read project state. Paths are local and not restricted to a workspace. Finalization recycles registered files only after the user selects the final revision and authorizes cleanup. CLI/JSONL generic requests are not callable through MCP."}),
+                json!({"protocolVersion":protocol,"capabilities":{"tools":{},"resources":{}},"serverInfo":{"name":"tinge","version":env!("CARGO_PKG_VERSION")},"instructions":"Use the individually exposed Tinge tools and their complete input schemas. Read project_info before revision-checked edits. submit_edit_preview queues only edit_preview; inspect job_status and committed revision even when preview fails or cancellation is requested. Jobs and retry keys are session-local; after reconnect read project state. Paths are local and not restricted to a workspace. Finalization recycles registered files only after the user selects the final revision and authorizes cleanup. CLI/JSONL generic requests are not callable through MCP."}),
             )
         }
         "ping" => Ok(json!({})),
@@ -252,7 +252,7 @@ pub fn handle(session: &mut Session, message: Value, initialized: &mut bool) -> 
                     let data = if lean { compact(data, &command) } else { data };
                     let failed = crate::outcome::failed(&data);
                     let mut content = vec![
-                        json!({"type":"text","text":if lean { format!("VibeColor {command}: {}", if failed { "failed; inspect structuredContent for committed changes and recovery details" } else { data.get("status").and_then(Value::as_str).unwrap_or("completed") }) } else { serde_json::to_string(&data)? }}),
+                        json!({"type":"text","text":if lean { format!("Tinge {command}: {}", if failed { "failed; inspect structuredContent for committed changes and recovery details" } else { data.get("status").and_then(Value::as_str).unwrap_or("completed") }) } else { serde_json::to_string(&data)? }}),
                     ];
                     for uri in crate::jobs::resource_uris(&data) {
                         if inline {
@@ -331,20 +331,17 @@ mod tests {
     fn resource_rejects_changed_content() {
         let d = tempfile::tempdir().unwrap();
         let path = d.path().join("preview.png");
-        let frame = vibecolor_core::Frame::new(1, 1, vec![[0.18, 0.18, 0.18, 1.0]]).unwrap();
-        vibecolor_io::export(
+        let frame = tinge_core::Frame::new(1, 1, vec![[0.18, 0.18, 0.18, 1.0]]).unwrap();
+        tinge_io::export(
             &frame,
             &path,
-            vibecolor_io::ExportOptions {
+            tinge_io::ExportOptions {
                 bit_depth: 8,
                 ..Default::default()
             },
         )
         .unwrap();
-        let uri = format!(
-            "vibecolor://preview/{}",
-            vibecolor_io::hash_file(&path).unwrap()
-        );
+        let uri = format!("tinge://preview/{}", tinge_io::hash_file(&path).unwrap());
         let mut s = Session::default();
         s.previews.insert(uri.clone(), path.clone());
         assert!(resource(&s, &uri).is_ok());
@@ -357,6 +354,7 @@ mod tests {
         let mut init = false;
         let r=handle(&mut s,json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}),&mut init).unwrap();
         assert_eq!(r["result"]["protocolVersion"], "2025-11-25");
+        assert_eq!(r["result"]["serverInfo"]["name"], "tinge");
         assert!(
             handle(
                 &mut s,
@@ -371,10 +369,10 @@ mod tests {
             &mut init,
         )
         .unwrap();
-        assert_eq!(r["result"]["tools"][0]["name"], "vibecolor_capabilities");
-        let r=handle(&mut s,json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"vibecolor_capabilities","arguments":{}}}),&mut init).unwrap();
+        assert_eq!(r["result"]["tools"][0]["name"], "tinge_capabilities");
+        let r=handle(&mut s,json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"tinge_capabilities","arguments":{}}}),&mut init).unwrap();
         assert_eq!(r["result"]["isError"], false);
-        let r=handle(&mut s,json!({"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"vibecolor_capabilities","arguments":{"typo":1}}}),&mut init).unwrap();
+        let r=handle(&mut s,json!({"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"tinge_capabilities","arguments":{"typo":1}}}),&mut init).unwrap();
         assert_eq!(r["result"]["isError"], true);
     }
 }

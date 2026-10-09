@@ -5,7 +5,7 @@ use std::{
     process::{Command, Stdio},
 };
 fn request(value: Value, success: bool) -> Value {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args(["run", "-"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -57,16 +57,16 @@ fn imported_cdl_values_and_metadata_survive_source_removal_and_project_export() 
     let pipeline: Value =
         serde_json::from_str(include_str!("../../../examples/aces2-srgb.json")).unwrap();
     let input = temp.path().join("source.exr");
-    let project = temp.path().join("cdl.vcolor");
-    let frame = vibecolor_core::Frame::new(2, 1, vec![[0.18, 0.4, 0.06, 0.25], [16., 4., 0.1, 1.]])
-        .unwrap();
-    vibecolor_io::export(
+    let project = temp.path().join("cdl.tinge");
+    let frame =
+        tinge_core::Frame::new(2, 1, vec![[0.18, 0.4, 0.06, 0.25], [16., 4., 0.1, 1.]]).unwrap();
+    tinge_io::export(
         &frame,
         &input,
-        vibecolor_io::ExportOptions {
+        tinge_io::ExportOptions {
             bit_depth: 32,
-            space: vibecolor_color::ColorSpace {
-                transfer: vibecolor_color::Transfer::Linear,
+            space: tinge_color::ColorSpace {
+                transfer: tinge_color::Transfer::Linear,
                 ..Default::default()
             },
             ..Default::default()
@@ -87,7 +87,7 @@ fn imported_cdl_values_and_metadata_survive_source_removal_and_project_export() 
         true,
     );
     let original = std::fs::read(&output).unwrap();
-    let decoded = vibecolor_io::load(&output, None).unwrap();
+    let decoded = tinge_io::load(&output, None).unwrap();
     let oracle: Value = serde_json::from_str(include_str!(
         "../../ocio/tests/fixtures/grades-ocio-2.5.2.json"
     ))
@@ -158,7 +158,7 @@ fn mcp_cdl_inspect_select_export_and_reread_keep_descriptions() {
     let input = temp.path().join("input.ccc");
     let output = temp.path().join("exported.ccc");
     std::fs::write(&input, fixture()["files"][1]["xml"].as_str().unwrap()).unwrap();
-    let document = vibecolor_ocio::cdl::read(&input).unwrap().0;
+    let document = tinge_ocio::cdl::read(&input).unwrap().0;
     let call = support::call;
     let messages = [
         json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}),
@@ -173,7 +173,7 @@ fn mcp_cdl_inspect_select_export_and_reread_keep_descriptions() {
         ),
         call(5, json!({"command":"cdl_inspect","input":output})),
     ];
-    let mut child = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .arg("mcp")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -238,13 +238,13 @@ fn malformed_cdl_and_missing_interpretation_fail_without_overwriting_or_committi
         false,
     );
     assert_eq!(std::fs::read(&output).unwrap(), b"keep output");
-    let document = vibecolor_ocio::cdl::read(&input).unwrap().0;
+    let document = tinge_ocio::cdl::read(&input).unwrap().0;
     request(
         json!({"command":"cdl_export","source":{"type":"document","document":document},"output":output,"overwrite":true}),
         false,
     );
     assert_eq!(std::fs::read(output).unwrap(), b"keep output");
-    let cli = Command::new(env!("CARGO_BIN_EXE_vibecolor"))
+    let cli = Command::new(env!("CARGO_BIN_EXE_tinge"))
         .args([
             "cdl-import",
             input.to_str().unwrap(),

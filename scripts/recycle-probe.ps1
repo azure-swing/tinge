@@ -2,7 +2,7 @@ param([Parameter(Mandatory)][string]$Directory, [switch]$Restore)
 $ErrorActionPreference = 'Stop'
 $fixtureDirectory = [System.IO.Path]::GetFullPath($Directory)
 $fixtureName = [System.IO.Path]::GetFileName($fixtureDirectory)
-if (-not $fixtureName.StartsWith('vibecolor-storage-')) { throw 'Only named acceptance fixture directories are supported' }
+if (-not $fixtureName.StartsWith('tinge-storage-')) { throw 'Only named acceptance fixture directories are supported' }
 $shell = New-Object -ComObject Shell.Application
 $items = @($shell.Namespace(10).Items())
 $found = @()

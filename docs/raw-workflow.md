@@ -3,10 +3,10 @@
 RAW 使用 rawler 0.8.0，程序运行不依赖 Python/LibRaw。显式 `raw_develop` 选择版本 1 的传感器开发链，输出仍为 scene-linear sRGB D65、float32、straight alpha。`init` / `grade` / `analyze` 均接受 `--raw-develop options.json`，JSONL/MCP 对应可选字段 `raw_develop`；项目保存于每个 revision，渲染、分析、预览、对比读取所选修订。RAW 与 `input_space` 或 OCIO encoded input 互斥，OCIO managed input/display 可继续使用。
 
 ```powershell
-target/release/vibecolor.exe raw-plan photo.CR2 --raw-develop examples/raw/as-shot.json
-target/release/vibecolor.exe init photo.CR2 --project photo.vcolor --raw-develop examples/raw/as-shot.json --color-pipeline examples/aces2-srgb.json
-target/release/vibecolor.exe apply photo.vcolor --expect-revision 0 --edits examples/raw/edits.json
-target/release/vibecolor.exe preview photo.vcolor --output preview.png
+target/release/tinge.exe raw-plan photo.CR2 --raw-develop examples/raw/as-shot.json
+target/release/tinge.exe init photo.CR2 --project photo.tinge --raw-develop examples/raw/as-shot.json --color-pipeline examples/aces2-srgb.json
+target/release/tinge.exe apply photo.tinge --expect-revision 0 --edits examples/raw/edits.json
+target/release/tinge.exe preview photo.tinge --output preview.png
 ```
 
 `raw_plan` 先解码并检查原始数据，解析选项和相机标定，不执行去马赛克，不修改项目。报告传感器尺寸、CFA/平面顺序、实际黑白电平、实际 WB 增益与来源、可选 illuminant tags、选定的 D65 适配矩阵、active/default crop 和方向。可请求最多 256 个 `sensor_points`，坐标为 `[x,y]`、原始传感器原点、未裁切/未旋转；每个点返回 native_values 与 normalized_before_wb，便于 agent 核对传感器值。
@@ -33,7 +33,7 @@ WB camera_gains 必须与相机颜色平面数量一致（三色为 3、四色�
 v1 在完整 sensor repeat pattern 上执行 `(sample-black)/(white-black)` 和相机 WB，再交给原生 PPG Bayer、X-Trans bilinear 或四色 bilinear。每个位置 white 必须大于 black；高于 white 不截断，RGB 转换后负值/HDR 继续保留，整数输出按选定显示链量化。裁切后 CFA 相位仍以原传感器为基准；项目初始开发校验使用已冻结源。不提供假装的高光恢复：曝光降低不能恢复已经传感器饱和的数据。
 
 ```json
-{"command":"apply","project":"photo.vcolor","expect_revision":1,"edits":[{"type":"set_raw_develop","options":{"exposure_ev":-0.5,"white_balance":{"type":"camera_gains","gains":[2.4,1,1.36]}}}]}
+{"command":"apply","project":"photo.tinge","expect_revision":1,"edits":[{"type":"set_raw_develop","options":{"exposure_ev":-0.5,"white_balance":{"type":"camera_gains","gains":[2.4,1,1.36]}}}]}
 ```
 
 新 RAW 参数参与 revision hash 和 decode cache key；restore/branch/tag 会复制完整设置，失败事务不改变项目 JSON。`set_raw_develop {options:null}` 回到旧解码路径，旧项目不添加字段且保持已有 hash。旧路径大部分颜色 RAW 使用去马赛克后 WB；v1 将 WB 放在之前，因此 PPG 可能产生不同像素，这个差别是版本语义。缺失拍摄 WB 的旧路径也修复为选定矩阵 D65 回退。compare 的左侧是**同一修订的 RAW 开发结果、旁路节点图**，右侧执行节点图，不是前后两个 RAW 设置；比较不同 RAW 修订可分别 preview。LUT 烘焙采样独立 RGB，不能把 RAW 解码/开发烘焙进 cube；CDL 文件同样不包含 RAW 设置。

@@ -1,4 +1,4 @@
-use vibecolor_io::temperature_white_xy;
+use tinge_io::temperature_white_xy;
 
 #[test]
 fn cct_and_signed_duv_match_independent_colour_science() {

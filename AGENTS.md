@@ -1,6 +1,6 @@
 # Working on Tinge
 
-Tinge is the plugin name; `vibecolor` is the native executable. Read README.md
+Tinge is the plugin name; `tinge` is the native executable. Read README.md
 and docs/status.md for implemented features and known limits.
 
 ## Code map
@@ -44,8 +44,8 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo build --release --locked
-python scripts/plugin-acceptance.py --executable target/release/vibecolor.exe
-python scripts/agent-acceptance.py --executable target/release/vibecolor.exe
+python scripts/plugin-acceptance.py --executable target/release/tinge.exe
+python scripts/agent-acceptance.py --executable target/release/tinge.exe
 node --test scripts/viewer-client.test.cjs
 ```
 

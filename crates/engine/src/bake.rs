@@ -8,12 +8,12 @@ use std::{
     path::Path,
     sync::{Arc, atomic::AtomicBool},
 };
-use vibecolor_color::{ColorSpace, Primaries, convert_linear, decode, encode};
-use vibecolor_core::{
+use tinge_color::{ColorSpace, Primaries, convert_linear, decode, encode};
+use tinge_core::{
     Frame, Mask, Operation, Recipe,
     lut::{CubeLut, LutInterpolation},
 };
-use vibecolor_ocio::{CompiledTransform, Pipeline, Transform, TransformReport};
+use tinge_ocio::{CompiledTransform, Pipeline, Transform, TransformReport};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
@@ -44,7 +44,7 @@ fn max_domain() -> [f32; 3] {
     [1.0; 3]
 }
 fn title() -> String {
-    "VibeColor RGB grade".into()
+    "Tinge RGB grade".into()
 }
 fn tetrahedral() -> LutInterpolation {
     LutInterpolation::Tetrahedral
@@ -198,7 +198,7 @@ fn io_processor(
             let p = pipeline.context("display LUT output requires color_pipeline")?;
             // Use public display behavior without inferring an arbitrary custom name.
             let display = p.display_name.as_deref().unwrap_or(p.display.name());
-            Ok(Some(vibecolor_ocio::compile_with_context(
+            Ok(Some(tinge_ocio::compile_with_context(
                 &p.source(),
                 &Transform::DisplayView {
                     source: p.working_space.clone(),
@@ -211,13 +211,13 @@ fn io_processor(
         }
         LutEncoding::Ocio { color_space } => {
             let p = pipeline.context("OCIO LUT encoding requires color_pipeline")?;
-            vibecolor_ocio::validate_color_space(&p.source(), color_space)?;
+            tinge_ocio::validate_color_space(&p.source(), color_space)?;
             let (source, destination) = if input {
                 (color_space.clone(), p.working_space.clone())
             } else {
                 (p.working_space.clone(), color_space.clone())
             };
-            Ok(Some(vibecolor_ocio::compile_with_context(
+            Ok(Some(tinge_ocio::compile_with_context(
                 &p.source(),
                 &Transform::ColorSpace {
                     source,
@@ -239,10 +239,10 @@ pub fn editable_dependencies(
     let Some(p) = pipeline.map(|p| p.resolved_at(origin)) else {
         return Ok(BTreeSet::new());
     };
-    if !matches!(p.source(), vibecolor_ocio::ConfigSource::File { .. }) {
+    if !matches!(p.source(), tinge_ocio::ConfigSource::File { .. }) {
         return Ok(BTreeSet::new());
     }
-    let mut processors: Vec<_> = vibecolor_project::compile_color_nodes(recipe, Some(&p))?
+    let mut processors: Vec<_> = tinge_project::compile_color_nodes(recipe, Some(&p))?
         .into_values()
         .collect();
     for (encoding, input) in [
@@ -276,7 +276,7 @@ fn decode_input(
                 space.primaries,
                 Primaries::Srgb,
             );
-            if space.transfer == vibecolor_color::Transfer::Pq {
+            if space.transfer == tinge_color::Transfer::Pq {
                 rgb = rgb.map(|v| v * 10000.0 / linear_unit_nits.unwrap());
             }
             p[..3].copy_from_slice(&rgb);
@@ -306,7 +306,7 @@ fn encode_output(
     if let LutEncoding::Standard { space } = encoding {
         for p in pixels {
             let mut rgb = convert_linear([p[0], p[1], p[2]], Primaries::Srgb, space.primaries);
-            if space.transfer == vibecolor_color::Transfer::Pq {
+            if space.transfer == tinge_color::Transfer::Pq {
                 rgb = rgb.map(|v| v * linear_unit_nits.unwrap() / 10000.0);
             }
             let rgb = rgb.map(|v| encode(v, space.transfer));
@@ -365,8 +365,8 @@ pub fn bake(
         "invalid LUT bake title"
     );
     let reachable_nodes = eligible_nodes(&recipe)?;
-    let manual_pq = matches!(&options.input_encoding,LutEncoding::Standard {space} if space.transfer==vibecolor_color::Transfer::Pq)
-        || matches!(&options.output_encoding,LutEncoding::Standard {space} if space.transfer==vibecolor_color::Transfer::Pq);
+    let manual_pq = matches!(&options.input_encoding,LutEncoding::Standard {space} if space.transfer==tinge_color::Transfer::Pq)
+        || matches!(&options.output_encoding,LutEncoding::Standard {space} if space.transfer==tinge_color::Transfer::Pq);
     if manual_pq {
         ensure!(
             options
@@ -381,9 +381,8 @@ pub fn bake(
         );
     }
     let temp = tempfile::tempdir()?;
-    let snapshot = temp.path().join("bake.vcolor");
-    let (recipe, pipeline) =
-        vibecolor_project::snapshot_recipe(recipe, pipeline, &snapshot, origin)?;
+    let snapshot = temp.path().join("bake.tinge");
+    let (recipe, pipeline) = tinge_project::snapshot_recipe(recipe, pipeline, &snapshot, origin)?;
     let snapshot_recipe_hash = blake3::hash(&serde_json::to_vec(&(&recipe, &pipeline))?)
         .to_hex()
         .to_string();

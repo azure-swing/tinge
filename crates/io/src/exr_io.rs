@@ -6,8 +6,8 @@ use exr::{
     prelude::*,
 };
 use std::path::Path;
-use vibecolor_color::{ColorSpace, Primaries, Transfer, convert_linear, decode};
-use vibecolor_core::Frame;
+use tinge_color::{ColorSpace, Primaries, Transfer, convert_linear, decode};
+use tinge_core::Frame;
 
 pub fn chromaticities(p: Primaries) -> Chromaticities {
     let (r, g, b, w) = match p {
@@ -81,7 +81,7 @@ fn tagged_primary(interop: &str) -> Option<Primaries> {
 pub fn is_straight(layer: &LayerAttributes) -> bool {
     layer
         .other
-        .get(b"vibecolorAlphaMode".as_slice())
+        .get(b"tingeAlphaMode".as_slice())
         .is_some_and(|v| matches!(v, AttributeValue::Text(t) if t=="straight"))
 }
 fn read_signal(path: &Path) -> Result<(SignalImage, ImageAttributes, LayerAttributes)> {
@@ -229,9 +229,9 @@ pub fn write(
         Text::from("colorInteropID"),
         AttributeValue::Text(Text::from(interop_id(space.primaries))),
     );
-    image.layer_data.attributes.software_name = Some(Text::from("VibeColor"));
+    image.layer_data.attributes.software_name = Some(Text::from("Tinge"));
     image.layer_data.attributes.other.insert(
-        Text::from("vibecolorAlphaMode"),
+        Text::from("tingeAlphaMode"),
         AttributeValue::Text(Text::from("premultiplied")),
     );
     image.write().to_unbuffered(writer)?;

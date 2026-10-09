@@ -1,4 +1,4 @@
-# VibeColor
+# Tinge
 
 面向 agent 的原生 CLI 图片调色软件，以 Codex 插件作为主要交互入口。
 
@@ -21,15 +21,15 @@
 
 | 模块 | 责任 |
 | --- | --- |
-| `vibecolor-core` | 节点图、算子描述、参数验证、CPU 参考实现 |
-| `vibecolor-project` | 原图引用、蒙版、非破坏性配方、分支与快照 |
-| `vibecolor-engine` | 执行计划、任务调度、缓存、进度与取消 |
-| `vibecolor-gpu` | GPU 资源、计算算子、节点执行和预览输出 |
-| `vibecolor-io` | 图片格式、RAW、元数据及原生库适配 |
-| `vibecolor-color` | 工作色彩空间、显示与输出变换、OCIO 适配 |
-| `vibecolor-cli` | 原生命令行及结构化输入输出 |
-| `vibecolor-mcp` | Codex 可调用工具、预览资源与结构化结果 |
-| `vibecolor-viewer` | 看图、圈选、原图对比、版本查看与保存 |
+| `tinge-core` | 节点图、算子描述、参数验证、CPU 参考实现 |
+| `tinge-project` | 原图引用、蒙版、非破坏性配方、分支与快照 |
+| `tinge-engine` | 执行计划、任务调度、缓存、进度与取消 |
+| `tinge-gpu` | GPU 资源、计算算子、节点执行和预览输出 |
+| `tinge-io` | 图片格式、RAW、元数据及原生库适配 |
+| `tinge-color` | 工作色彩空间、显示与输出变换、OCIO 适配 |
+| `tinge-cli` | 原生命令行及结构化输入输出 |
+| `tinge-mcp` | Codex 可调用工具、预览资源与结构化结果 |
+| `tinge-viewer` | 看图、圈选、原图对比、版本查看与保存 |
 
 CLI、MCP 和查看界面调用同一套引擎接口，并使用一致的项目状态。窗口关闭后，引擎仍能无头处理和导出。
 

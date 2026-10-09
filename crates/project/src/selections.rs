@@ -121,7 +121,7 @@ pub fn save(project: &Path, expected: u64, mut item: Selection) -> Result<Select
         bytes.len() <= 16 * 1024 * 1024,
         "selection document exceeds 16MiB"
     );
-    vibecolor_io::atomic_bytes(&path(project), &bytes, true)?;
+    tinge_io::atomic_bytes(&path(project), &bytes, true)?;
     Ok(item)
 }
 
@@ -131,9 +131,9 @@ mod tests {
     fn fixture() -> (tempfile::TempDir, PathBuf, Selection) {
         let dir = tempfile::tempdir().unwrap();
         let input = dir.path().join("input.png");
-        let path = dir.path().join("p.vcolor");
-        vibecolor_io::export(
-            &vibecolor_core::Frame::new(2, 1, vec![[0.2, 0.4, 0.6, 1.0]; 2]).unwrap(),
+        let path = dir.path().join("p.tinge");
+        tinge_io::export(
+            &tinge_core::Frame::new(2, 1, vec![[0.2, 0.4, 0.6, 1.0]; 2]).unwrap(),
             &input,
             Default::default(),
         )

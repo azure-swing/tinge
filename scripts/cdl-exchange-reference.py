@@ -10,7 +10,7 @@ import PyOpenColorIO as ocio
 assert ocio.GetVersion() == '2.5.2'
 root = Path(__file__).resolve().parents[1]
 artifacts = root / 'artifacts'
-exe = root / 'target/release/vibecolor.exe'
+exe = root / 'target/release/tinge.exe'
 
 
 def run(request):
@@ -58,7 +58,7 @@ assert native.getSlope()[0] == precise['corrections'][0]['slope'][0]
 assert native.getOffset()[0] == precise['corrections'][0]['offset'][0]
 assert run({'command': 'cdl_inspect', 'input': str(precision_path)})['document']['corrections'][0]['metadata']['descriptions'] == precise['corrections'][0]['metadata']['descriptions']
 
-project = artifacts / 'cdl-exchange-demo.vcolor'
+project = artifacts / 'cdl-exchange-demo.tinge'
 imported = run({'command': 'cdl_import', 'input': str(artifacts / 'cdl-input.ccc'),
                 'selector': {'type': 'id', 'id': '1'}, 'color_space': 'ACEScct', 'style': 'no_clamp'})
 pipeline = json.loads((root / 'examples/aces2-srgb.json').read_text())
