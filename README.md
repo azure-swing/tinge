@@ -2,7 +2,7 @@
 
 面向 agent 的本地图片调色插件，基于 Tinge 原生 Rust CLI 引擎。目标是覆盖 DaVinci Resolve Studio 中适用于静态图片的调色、蒙版和图像处理，并补足 Lightroom 的摄影显影工作流。
 
-**当前为 0.2 开发版，尚未达到完整功能对等。** 已实现可运行的浮点调色引擎、节点图、蒙版、非破坏性项目和 MCP；完整需求没有缩减。具体差距见 [功能覆盖表](docs/coverage.md)。原有语言约定和架构计划保存在 [原始设计](docs/original-design.md)。
+**当前为 0.2.1 开发版，尚未达到完整功能对等。** 已实现浮点调色引擎、节点图、查看器选区、局部蒙版、无模型抠像、非破坏性项目和 MCP；完整需求没有缩减。具体差距见 [功能覆盖表](docs/coverage.md)。原有语言约定和架构计划保存在 [原始设计](docs/original-design.md)。
 
 ## 构建与运行
 
@@ -48,13 +48,33 @@ $vc = '.\target\release\tinge.exe'
 
 默认拒绝覆盖已有输出；需要覆盖时显式使用 `--overwrite`。输出禁止与源图、项目文件或项目资产冲突。
 
+## 选区、遮罩与局部调色
+
+已实现查看器选区和引擎蒙版（遮罩），可以把调整限制在图片的指定区域。
+
+查看器提供自由圈划、椭圆和增加/减去区域，并可保存选区及文字批注。缩放和平移不改变选区坐标；保存时绑定当前显示的修订、源图/配方 hash、输出节点和全尺寸，避免选区被直接套到另一幅画面。圈选记录保存在 `<project>.selections.json`，保存选区本身不修改调色配方或项目修订。
+
+保存后，agent 通过 `tinge_selections` 或 `tinge selections portrait.tinge` 读取记录，核对画面基准，再用 `set_mask` 登记蒙版并绑定局部调色节点。`tinge_selection_save` 也可通过 MCP 保存几何选区；CLI/JSONL 使用 `run`/`serve` 的 `selection_save` 请求。当前不会因保存圈选自动启动 agent 或立即应用调色；裁切、旋转或输出节点变化后需重新核对坐标。
+
+| 引擎蒙版 | 已有能力 |
+| --- | --- |
+| 几何区域 | 椭圆、矩形、多边形；支持羽化，椭圆支持旋转 |
+| 渐变与笔刷 | 线性渐变；笔刷轨迹、半径和硬度 |
+| 范围选取 | 线性亮度范围、HSL 色相/饱和度/亮度范围 |
+| 外部灰度图 | 导入与节点输入尺寸一致的灰度蒙版，不自动读取 alpha 或缩放 |
+| 组合 | 并集、交集、相减、反选，可递归组合 |
+
+上述蒙版可用于配方和项目编辑；网页当前的绘制工具是自由圈划和椭圆。每个局部节点通过 `mask` 指定蒙版 ID，`mix` 控制效果强度。[局部调色示例](examples/local-edits.json) 包含带羽化的椭圆主体蒙版和天空渐变蒙版。当前笔刷不支持笔压/flow 累积，也没有 AI 主体、天空或人物语义选区。无模型前景分割和透明蒙版导出见下方抠像说明。
+
+交互与选区记录见 [Web 查看器](docs/viewer-workflow.md)，参数、坐标和混合语义见 [蒙版与算子](docs/operators.md#蒙版)。
+
 ## Agent 协议
 
-MCP 已按 [OpenAI Plugin guidelines](https://developers.openai.com/plugins/plugin-guidelines) 改为独立命名工具：`tinge_project_info`、`tinge_edit_preview`、`tinge_submit_edit_preview`、`tinge_render`、`tinge_cleanup_plan`、`tinge_finalize` 等。每个工具包含完整静态参数契约和显式安全标注。旧通用 MCP 工具 `tinge_agent` / `tinge_run`、通用 job_submit / batch 不再公开或接受；CLI/JSONL 的 command 请求格式保持兼容。这是 MCP 接口的破坏性迁移，需更新调用端。图片默认返回资源引用，统计显式请求；后台任务支持会话内幂等重试。见 [Agent 工作流](docs/agent-workflow.md)。
+MCP 提供 49 个独立命名工具：`tinge_project_info`、`tinge_edit_preview`、`tinge_submit_edit_preview`、`tinge_selections`、`tinge_selection_save`、`tinge_render`、`tinge_cleanup_plan`、`tinge_finalize` 等。每个工具包含完整静态参数契约和显式安全标注，参数不含 `command`；通用请求和 batch 仅供 CLI/JSONL 使用。图片默认返回资源引用，统计显式请求；后台任务支持会话内幂等重试。`_response:"full"` 控制诊断详情，`_inline_image:true` 控制内联图片，`include_analysis` 控制可选分析，三者独立。见 [Agent 工作流](docs/agent-workflow.md)。
 
 Tinge 的本地 Windows 插件模板在 `plugin/`，包含 manifest、STDIO 连接和图片工作流 Skill。运行 `pwsh -File scripts/package-plugin.ps1` 构建包含原生二进制、Skill 参考资料、许可证与本地 marketplace 的独立包；包固定输出到 `target/plugin-package/tinge`，使用正式 `target/release/tinge.exe`；构建前须结束占用程序的旧进程。脚本输出包根目录。没有提交或发布动作。设计依据、迁移和验收边界见 [插件规范改造](docs/plugin-design.md)。
 
-0.2.1 新增“定稿并清理”：选定最终版本后回收已登记的临时预览和其他版本临时导出，保留源图/资产/全部历史/最终导出。查看器不再写临时 PNG，Agent 预览可使用稳定缓存路径，无损 PNG/项目 JSON 进一步减少体积。详见 [临时文件工作流](docs/storage-workflow.md)。
+“定稿并清理”在选定最终版本后，将已登记且未修改的临时预览和其他版本临时导出移入系统回收站，保留源图/资产/全部历史/正式导出及最终修订的临时导出。实际回收当前仅支持 Windows 本地固定磁盘，其他平台或回收失败时保留文件，不回退到永久删除。查看器不写临时 PNG，Agent 预览可使用稳定缓存路径，无损 PNG/项目 JSON 进一步减少体积。详见 [临时文件工作流](docs/storage-workflow.md)。
 
 无模型抠像支持颜色取样、GrabCut 框选/前景背景标记、trimap、Closed-Form alpha 精修和去溢色，可导出透明图片与独立 16 位灰度蒙版：
 
@@ -64,14 +84,14 @@ Tinge 的本地 Windows 插件模板在 `plugin/`，包含 manifest、STDIO 连�
 
 无需模型下载或额外运行库；复杂背景需少量标记。参数和项目节点见 [抠像工作流](docs/cutout-workflow.md)。
 
-普通命令的成功结果写 stdout：`{"ok":true,"data":...}`。错误写 stderr，退出码 1；参数错误退出码 2。`--progress` 将节点进度作为 JSONL 写 stderr。`--help` 和 `--version` 输出普通文本。
+普通命令的成功结果写 stdout：`{"ok":true,"data":...}`；执行错误写 stderr，退出码 1，命令行参数错误退出码 2。已提交编辑但后续预览失败等部分失败仍将回执写 stdout：`{"ok":false,"data":...}`，退出码 1；需检查 `committed`、`revision` 和 `preview_error`，避免重复编辑。JSONL 按条返回失败并继续服务，MCP 使用 `isError:true`。`--progress` 将节点进度作为 JSONL 写 stderr；`--help` 和 `--version` 输出普通文本。
 
 - `schema request` / `schema recipe` / `schema edits`：与 Rust 类型一起生成 JSON Schema。
 - `run request.json` / `run -`：结构化请求，支持文件或 stdin。
 - `serve`：常驻 JSONL 服务，一行一个请求，一行一个响应，共享解码和节点缓存。
 - `mcp`：MCP STDIO 服务，每个操作由独立工具暴露，不传 command；预览返回资源引用，也可请求内联 PNG。
 - `batch manifest.json`：批量请求，逐项返回结果；失败时整体退出码为 1。JSONL 会报告批次中的逐项失败；MCP 不提供通用 batch。
-- 项目修改必须携带 `expect_revision`。冲突返回 `revision_conflict`、`expected_revision` 和 `actual_revision`，不会覆盖其他修改。
+- 修改已有项目和保存选区必须携带 `expect_revision`。冲突返回 `revision_conflict`、`expected_revision` 和 `actual_revision`，不会覆盖其他修改；保存选区只写独立批注文件。
 
 MCP 客户端可使用以下通用 STDIO 配置，将 command 替换为实际绝对路径：
 
@@ -115,7 +135,7 @@ RAW 可使用版本化的传感器电平、相机 WB/xy、曝光、裁切方向�
 | `tinge-color` | RGB 原色矩阵、sRGB/gamma/PQ/HLG 传递函数 |
 | `tinge-ocio` | 真实 OCIO、配置发现、色彩转换、ACES 输入/显示链 |
 | `tinge-io` | 图片解码、RAW 适配、ICC、8/16/32 位原子导出 |
-| `tinge-project` | 冻结源图与资产、版本、事务、分支、标签、恢复 |
+| `tinge-project` | 冻结源图与资产、版本、事务、分支、标签、恢复、绑定修订的选区批注 |
 | `tinge-engine` | CPU / Rayon 调度、内容缓存、节点进度、引擎取消标记 |
 | `tinge-cli` | 原生 CLI、JSON/JSONL 和 MCP STDIO |
 
@@ -128,12 +148,10 @@ RAW 可使用版本化的传感器电平、相机 WB/xy、曝光、裁切方向�
 - 输出：PNG 8/16、JPEG 8、TIFF 8/16/32、EXR 32。SDR RGB 可选择 sRGB/P3/Rec.2020/ACEScg 原色和正确 ICC；线性 EXR 写入色彩标签与 chromaticities。Rec.2020 PQ 输出限 16 位 PNG，写 cICP。
 - 整数导出最后裁剪 RGB 并报告。OCIO 支持 sRGB、P3、Rec.2100 PQ 显示输出；P3/PQ 项目为 agent 指定独立 SDR sRGB 预览 view。未启用时默认普通 sRGB，可添加 tone_map 或声明 output_space。手动 PQ 编码须声明 linear_unit_nits，完整 HLG/OOTF、HDR 静态元数据和校准显示仍待实现。
 - EXIF/XMP/IPTC 尚不复制；JPEG 和 32 位 TIFF 当前不能输出透明图片。RGBA EXR 在文件中预乘、内部为 straight alpha；零 alpha 隐藏 RGB 导出时丢弃并报告，外部 additive EXR 暂不支持。
-- 项目为 `.tinge` JSON，旁边的 `.tinge.assets/` 保存按内容命名的资产。搬迁时一起移动。`.lock` 文件只承载 OS 文件锁，不依赖删除文件解锁。
+- 项目使用 `.tinge` JSON，旁边的 `.tinge.assets/` 保存按内容命名的资产；保存过圈选时还有 `.tinge.selections.json`。搬迁时一起移动。`.lock` 文件只承载 OS 文件锁，不依赖删除文件解锁。
 - 所有配方资源相对于配方文件目录解析；JSONL/MCP 的资源相对于当前目录或显式 `asset_base`。
 
-## 验证
-
-架构与 Agent 接口的审计、已修复问题和后续优先级见 [架构审计](docs/architecture-audit.md)。开发入口与必须保持的约束见 [AGENTS.md](AGENTS.md)。
+## LUT 与 CDL 交换
 
 ASC CDL 文件可通过 `cdl-inspect`、`cdl-import`、`cdl-export` 交换。导入要求指定处理空间和风格，返回可直接用于 apply 的 ocio_grade op；SOP/饱和度与来源描述存进项目。导出所选节点的参数，并报告文件未表达的处理链上下文。详见 [CDL 工作流](docs/cdl-workflow.md)。
 
@@ -144,10 +162,20 @@ LUT 可检查纯 1D/3D 或组合 shaper，选择 trilinear/tetrahedral。纯颜�
 & $vc lut-inspect artifacts/grade.cube
 ```
 
+## 验证
+
+架构与 Agent 接口的审计、已修复问题和后续优先级见 [架构审计](docs/architecture-audit.md)。开发入口与必须保持的约束见 [AGENTS.md](AGENTS.md)。核心检查包括：
+
 ```powershell
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
+cargo build --release --locked
+python scripts/plugin-acceptance.py --executable target/release/tinge.exe
+python scripts/agent-acceptance.py --executable target/release/tinge.exe
+node --test scripts/viewer-client.test.cjs
+
+# 生成工程测试图并验证配方
 cargo run -p tinge-cli --example test_chart -- artifacts/test-chart.png
 & $vc grade artifacts/test-chart.png --recipe examples/cinematic.json --output artifacts/graded.png
 
@@ -155,7 +183,9 @@ cargo run -p tinge-cli --example test_chart -- artifacts/test-chart.png
 python scripts/icc-reference.py
 ```
 
-测试包括传递函数参考向量、色彩矩阵、ICC、高位深往返、RAW DNG、LUT 顺序/插值、局部蒙版、HDR/负值、透明滤波、事务失败/冲突、分支恢复，以及真实进程 CLI/MCP 工作流。OCIO 与官方 Python 绑定生成的固定向量对照，另验证编码输入、显示输出和项目色彩链历史。RAW 相机样本、校准显示、GPU 和 Resolve/LR 对照验收需要继续扩展。
+Linux 将可执行路径改为 `target/release/tinge`；Windows 插件打包和系统回收站验收具有平台限制。真实查看器 HTTP 验收可运行 `python scripts/viewer-acceptance.py`（脚本当前使用 Windows 正式程序路径）。
+
+测试包括传递函数参考向量、色彩矩阵、ICC、高位深往返、RAW DNG、LUT 顺序/插值、局部蒙版、选区保存及坐标/版本冲突、HDR/负值、透明滤波、事务失败/冲突、分支恢复，以及真实进程 CLI/MCP 工作流。OCIO 与官方 Python 绑定生成的固定向量对照，另验证编码输入、显示输出和项目色彩链历史。RAW 相机样本、校准显示、GPU 和 Resolve/LR 对照验收需要继续扩展；工具契约测试不代表真实模型工具选择或全部宿主兼容验收通过。
 
 独立 LittleCMS 检验四类 ICC 输出的 8 位 SDR 交换，最大差异为 1 个量化步长；OCIO 与固定官方 Python wheel 的 24 组转换/调色/Look、8 组 LUT 插值、20 组 CDL 文件/风格/方向参考用例对照。实际烘焙 LUT 和 CDL 文件也由官方 OCIO 独立读取核验。最新构建、测试和边界说明见 [当前状态](docs/status.md)。
 
