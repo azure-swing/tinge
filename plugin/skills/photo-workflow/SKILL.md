@@ -55,6 +55,11 @@ cleanup: only use `tinge_cleanup_plan` then `tinge_finalize` for an explicitly
 chosen final revision and authorized recycling. `temporary:true` means draft.
 Overwrite only within the user's scope; protect source/project/assets/history.
 
+For look development (such as sunset), an unsatisfactory cast or a request for
+colorist guidance, optionally read [colorist handbook](references/colorist-handbook.md).
+It offers decision criteria and official reading, not a fixed preset or required
+step for routine exposure/export work.
+
 Load only the reference needed: [operator units and masks](references/operators.md),
 [RAW](references/raw-workflow.md), [color pipeline](references/color-pipeline.md),
 [viewer selections](references/viewer-workflow.md), or

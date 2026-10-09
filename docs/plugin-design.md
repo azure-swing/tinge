@@ -83,7 +83,7 @@ cargo test --workspace --locked
 python scripts/agent-acceptance.py --executable target/release/tinge.exe
 python scripts/plugin-acceptance.py --executable target/release/tinge.exe --package '<生成根目录>/tinge'
 # 安装新版后，直接通过桌面版自带 Codex 的 app-server 验证宿主启动及工具目录，无模型调用
-python scripts/plugin-host-acceptance.py --codex '<桌面版 codex.exe 路径>' --version 0.2.5
+python scripts/plugin-host-acceptance.py --codex '<桌面版 codex.exe 路径>' --version 0.2.6
 ```
 
 工具选择样例在 tests/plugin-prompts.json。目标宿主回放每个 prompt，保存

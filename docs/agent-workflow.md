@@ -49,6 +49,12 @@ MCP 使用独立命名工具，每项工具直接提供完整静态 schema 与�
 源图统计用 analyze（不接收 recipe），项目配方统计用 stats；LUT 烘焙用 lut_bake 的
 project/revision。直接配方处理保留在高级 grade/validate/节点编辑中，CLI/JSONL 不变。
 
+## 可选调色参考
+
+需要设计风格（如晚霞）、排查整图偏色，或用户要求按调色师方法处理时，可按需读取
+[调色参考手册](colorist-handbook.md)。它提供判断依据、Tinge 操作映射和官方资料入口，
+不作为普通曝光/导出任务的必读上下文，也不规定统一色相或固定参数。
+
 ## 结果、文件与授权范围
 
 结果只在 structuredContent 中返回一次；compact/full 的 text 均为短状态，不复制 JSON。
