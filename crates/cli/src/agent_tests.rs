@@ -52,7 +52,8 @@ fn call(session: &mut Session, arguments: Value, lean: bool) -> Value {
             request["idempotency_key"] = key;
         }
         arguments = request;
-        format!("submit_{nested}")
+        arguments["background"] = json!(true);
+        nested
     } else if lean && command == "show" {
         "project_info".into()
     } else {

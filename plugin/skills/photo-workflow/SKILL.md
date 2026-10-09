@@ -22,9 +22,12 @@ Prefer the shortest useful loop:
 - Advanced graphs/masks: load `tinge_edit_preview` and read `include_recipe:true`
   only when needed. Preserve the existing graph. A conflicting/bypassed basic
   group needs reconciliation or a deliberately new adjustment ID.
-- Heavy work: use the corresponding `tinge_submit_*`, keep its actual job ID,
+- Heavy work: set `background:true` on the same tool, keep its returned job ID,
   and check `tinge_job_status` without tight polling. New mutations get new
   idempotency keys; identical retries reuse the key and arguments in that session.
+- Source statistics: `tinge_analyze`; project recipe statistics: `tinge_stats`.
+  `tinge_lut_bake` takes a project and optional revision. Direct recipe processing
+  belongs to advanced `tinge_grade`, `tinge_validate` and graph editing.
 - Export: `tinge_render` for the requested revision/path/color space. Viewer,
   scopes, full diagnostics and history are optional, not prerequisites.
 

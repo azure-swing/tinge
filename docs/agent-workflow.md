@@ -32,10 +32,16 @@ MCP 使用独立命名工具，每项工具直接提供完整静态 schema 与�
 每个工具已有完整静态 schema，不必先查询 `tinge_schema`；只在需要单个算子、
 蒙版或 edit 的说明时使用它。
 
-重型工作使用对应 `tinge_submit_*`，以实际返回的 job ID 查询 job_status，
+重型工作在同一工具上设 `background:true`，以实际返回的 job ID 查询 job_status，
 不紧密轮询。每次新编辑使用新 idempotency_key；同会话相同请求重试复用 key。
 取消不回滚已提交编辑；预览失败也可能带 committed/revision/preview_error。
 先核对回执，不能因为没看到图片就再次编辑。冲突后核对新配方，不盲目替换版本号。
+
+支持后台模式的工具为 adjust/edit_preview/preview/compare/render/grade/stats/analyze/finalize。
+省略 background 或 false 同步执行；idempotency_key 只用于 background:true，任务仍属当前会话。
+这些工具统一标为非只读，因为后台模式会创建任务；stats/analyze 同步调用仍只读取图片。
+源图统计用 analyze（不接收 recipe），项目配方统计用 stats；LUT 烘焙用 lut_bake 的
+project/revision。直接配方处理保留在高级 grade/validate/节点编辑中，CLI/JSONL 不变。
 
 ## 结果、文件与授权范围
 
@@ -57,9 +63,9 @@ adjust 自动使用托管路径；preview/compare/edit_preview 可省略 output�
 preview/compare 的稳定缓存文件可能被替换，所以不是只读操作。
 显式输出默认拒绝覆盖，只有 overwrite:true 才允许，并继续保护源图、项目和资产。
 
-render/submit_render 不隐式定稿或清理。temporary 默认为 false，正式输出保留；
+render 的同步/后台模式均不隐式定稿或清理。temporary 默认为 false，正式输出保留；
 temporary:true 登记为可清理草稿。仅当用户已选定最终 revision 并授权清理时，
-先用 tinge_cleanup_plan 查看范围，再调用 tinge_finalize/submit_finalize。
+先用 tinge_cleanup_plan 查看范围，再调用 tinge_finalize（可设 background:true）。
 回收是破坏性操作；可恢复不等于非破坏性。平台和部分失败行为见
 [临时文件工作流](storage-workflow.md)。
 

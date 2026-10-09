@@ -6,32 +6,7 @@
       "prompt": "用 Tinge 调整 C:/photos/portrait.tinge 的曝光并给我看预览。",
       "expected_tools": [
         "tinge_project_info",
-        "tinge_adjust",
-        "tinge_submit_adjust"
-      ],
-      "forbidden_tools": [
-        "tinge_finalize",
-        "tinge_submit_finalize"
-      ],
-      "expectation": "Read current revision without recipe, combine basic controls in one adjust, reuse adjustment_id and inspect preview; no cleanup.",
-      "required_any_groups": [
-        [
-          "tinge_project_info"
-        ],
-        [
-          "tinge_adjust",
-          "tinge_submit_adjust"
-        ]
-      ]
-    },
-    {
-      "id": "indirect-edit",
-      "kind": "indirect",
-      "prompt": "C:/photos/portrait.tinge 这张人像太暗了，提亮一点，保留修改历史。",
-      "expected_tools": [
-        "tinge_project_info",
-        "tinge_adjust",
-        "tinge_submit_adjust"
+        "tinge_adjust"
       ],
       "forbidden_tools": [
         "tinge_finalize"
@@ -42,8 +17,28 @@
           "tinge_project_info"
         ],
         [
-          "tinge_adjust",
-          "tinge_submit_adjust"
+          "tinge_adjust"
+        ]
+      ]
+    },
+    {
+      "id": "indirect-edit",
+      "kind": "indirect",
+      "prompt": "C:/photos/portrait.tinge 这张人像太暗了，提亮一点，保留修改历史。",
+      "expected_tools": [
+        "tinge_project_info",
+        "tinge_adjust"
+      ],
+      "forbidden_tools": [
+        "tinge_finalize"
+      ],
+      "expectation": "Read current revision without recipe, combine basic controls in one adjust, reuse adjustment_id and inspect preview; no cleanup.",
+      "required_any_groups": [
+        [
+          "tinge_project_info"
+        ],
+        [
+          "tinge_adjust"
         ]
       ]
     },
@@ -53,21 +48,18 @@
       "prompt": "用 Tinge 把 C:/photos/portrait.tinge 曝光设为 +0.3、对比度 1.1、饱和度 1.05，并压一点高光，一次调整后给我看图。",
       "expected_tools": [
         "tinge_project_info",
-        "tinge_adjust",
-        "tinge_submit_adjust"
+        "tinge_adjust"
       ],
       "required_any_groups": [
         [
           "tinge_project_info"
         ],
         [
-          "tinge_adjust",
-          "tinge_submit_adjust"
+          "tinge_adjust"
         ]
       ],
       "forbidden_tools": [
-        "tinge_finalize",
-        "tinge_submit_finalize"
+        "tinge_finalize"
       ],
       "expectation": "One combined basic adjustment after observing revision; absolute controls, inline preview, omit full recipe."
     },
@@ -91,12 +83,10 @@
       "kind": "indirect",
       "prompt": "把 C:/photos/portrait.tinge 的版本 3 输出为 C:/exports/final.png，16 位。",
       "expected_tools": [
-        "tinge_render",
-        "tinge_submit_render"
+        "tinge_render"
       ],
       "forbidden_tools": [
-        "tinge_finalize",
-        "tinge_submit_finalize"
+        "tinge_finalize"
       ],
       "required_arguments": {
         "revision": 3,
@@ -106,8 +96,7 @@
       "expectation": "Exact revision export; final in a filename does not authorize recycling.",
       "required_any_groups": [
         [
-          "tinge_render",
-          "tinge_submit_render"
+          "tinge_render"
         ]
       ]
     },
@@ -136,8 +125,7 @@
       "expected_tools": [
         "tinge_project_info",
         "tinge_cleanup_plan",
-        "tinge_finalize",
-        "tinge_submit_finalize"
+        "tinge_finalize"
       ],
       "expectation": "Inspect current revision and plan; finalize selected revision with actual expect_revision.",
       "required_any_groups": [
@@ -148,8 +136,7 @@
           "tinge_cleanup_plan"
         ],
         [
-          "tinge_finalize",
-          "tinge_submit_finalize"
+          "tinge_finalize"
         ]
       ]
     },
@@ -161,8 +148,7 @@
         "tinge_project_info"
       ],
       "forbidden_tools": [
-        "tinge_finalize",
-        "tinge_submit_finalize"
+        "tinge_finalize"
       ],
       "read_only_only": true,
       "expectation": "Ask for chosen revision; do not infer it from head.",
@@ -217,13 +203,11 @@
       "kind": "edge",
       "prompt": "刚才编辑任务提示 committed=true, revision=8，但 preview_error 非空。请只重新生成 C:/photos/portrait.tinge 版本 8 的预览。",
       "expected_tools": [
-        "tinge_preview",
-        "tinge_submit_preview"
+        "tinge_preview"
       ],
       "forbidden_tools": [
         "tinge_apply",
         "tinge_edit_preview",
-        "tinge_submit_edit_preview",
         "tinge_finalize"
       ],
       "required_arguments": {
@@ -232,8 +216,7 @@
       "expectation": "Regenerate pixels without duplicating edits.",
       "required_any_groups": [
         [
-          "tinge_preview",
-          "tinge_submit_preview"
+          "tinge_preview"
         ]
       ]
     },
@@ -320,6 +303,24 @@
           "tinge_lut_inspect"
         ]
       ]
+    },
+    {
+      "id": "background-export",
+      "kind": "direct",
+      "prompt": "Export revision 3 of C:/photos/portrait.tinge to C:/exports/final.png in the background.",
+      "expected_tools": [
+        "tinge_render"
+      ],
+      "required_any_groups": [
+        [
+          "tinge_render"
+        ]
+      ],
+      "required_arguments": {
+        "background": true,
+        "revision": 3
+      },
+      "expectation": "Use the same render tool with background:true, retain its actual job ID and poll job_status."
     }
   ]
 }

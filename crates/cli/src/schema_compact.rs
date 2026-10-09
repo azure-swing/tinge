@@ -300,6 +300,46 @@ pub fn compact(schema: &mut Value) {
     inline_small_definitions(schema);
 }
 
+/// Retain only definitions reachable from a narrowed tool schema.
+pub fn prune_definitions(schema: &mut Value) {
+    let Some(definitions) = schema.as_object_mut().unwrap().remove("$defs") else {
+        return;
+    };
+    let mut pending = std::collections::BTreeSet::new();
+    let mut refs = |value: &Value| {
+        if let Some(reference) = value.get("$ref").and_then(Value::as_str) {
+            pending.insert(
+                reference
+                    .strip_prefix("#/$defs/")
+                    .expect("local definition")
+                    .to_owned(),
+            );
+        }
+    };
+    visit(schema, &mut refs);
+    let mut retained = serde_json::Map::new();
+    while let Some(name) = pending.pop_first() {
+        if retained.contains_key(&name) {
+            continue;
+        }
+        let definition = definitions[&name].clone();
+        visit(&definition, &mut |value| {
+            if let Some(reference) = value.get("$ref").and_then(Value::as_str) {
+                pending.insert(
+                    reference
+                        .strip_prefix("#/$defs/")
+                        .expect("local definition")
+                        .to_owned(),
+                );
+            }
+        });
+        retained.insert(name, definition);
+    }
+    if !retained.is_empty() {
+        schema["$defs"] = Value::Object(retained);
+    }
+}
+
 /// MCP wording only; leave serialized data and developer API docs untouched.
 pub fn simplify_descriptions(schema: &mut Value) {
     visit_mut(schema, &mut |value| {

@@ -133,12 +133,37 @@ fn mcp_bakes_native_log_cdl_and_inspects_strict_cube_metadata() {
         serde_json::from_str(include_str!("../../../examples/aces2-srgb.json")).unwrap();
     let recipe =
         json!({"nodes":[{"id":"cdl","op":{"type":"ocio_grade","grade":grade}}],"output":"cdl"});
+    let source = dir.path().join("source.png");
+    let project = dir.path().join("log.tinge");
+    tinge_io::export(
+        &Frame::new(1, 1, vec![[0.2, 0.3, 0.4, 1.0]]).unwrap(),
+        &source,
+        Default::default(),
+    )
+    .unwrap();
+    tinge_project::init_with_pipeline(
+        &project,
+        &source,
+        None,
+        Some(serde_json::from_value(pipeline).unwrap()),
+    )
+    .unwrap();
+    tinge_project::transaction(
+        &project,
+        0,
+        vec![tinge_project::Edit::ReplaceRecipe {
+            recipe: serde_json::from_value(recipe).unwrap(),
+        }],
+        "log grade".into(),
+        dir.path(),
+    )
+    .unwrap();
     let call = support::call;
     let messages = [
         json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}),
         call(
             2,
-            json!({"command":"lut_bake","source":{"type":"recipe","recipe":recipe,"color_pipeline":pipeline},"output":output,"options":{"size":17,"validation_samples":256,"input_encoding":{"type":"ocio","color_space":"ACEScct"},"output_encoding":{"type":"ocio","color_space":"ACEScct"}}}),
+            json!({"command":"lut_bake","project":project,"revision":1,"output":output,"options":{"size":17,"validation_samples":256,"input_encoding":{"type":"ocio","color_space":"ACEScct"},"output_encoding":{"type":"ocio","color_space":"ACEScct"}}}),
         ),
         call(3, json!({"command":"lut_inspect","input":output})),
     ];

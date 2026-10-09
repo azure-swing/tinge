@@ -11,7 +11,7 @@
 ## 工具契约
 
 MCP 不再枚举或接受 tinge_agent/tinge_run/job_submit/batch。
-每个业务操作由 tinge_<操作> 独立公开，后台按 submit_<操作> 分别公开。
+每个业务操作由 tinge_<操作> 独立公开，同步/后台共用契约，通过 background:true 选择后台。
 Rust Request 枚举仍是引擎与 CLI/JSONL 的共同实现；工具契约从对应单项生成，
 去掉 command，保留严格字段检查和所有传递类型定义。
 新增请求类型必须登记安全元数据或明确保持 CLI-only，否则目录完整性测试失败。
@@ -52,8 +52,8 @@ plugin/ 是构建模板，二进制与参考资料由脚本装入最终包；安
 通用 STDIO 客户端仍可直接配置 exe + args:["mcp"]。
 已有 MCP 调用需要把 `name:tinge_agent, arguments:{command:render,...}` 改为
 `name:tinge_render, arguments:{...}`。
-旧 job_submit(request=edit_preview) 改为 tinge_submit_edit_preview，参数摊平，
-idempotency_key 保留。完整结果设置 _response:full；内联图设置 _inline_image:true。
+CLI job_submit(request=edit_preview) 在 MCP 中使用 tinge_edit_preview，参数摊平并设
+background:true，idempotency_key 保留；submit_* 工具已移除。完整结果设置 _response:full；内联图设置 _inline_image:true。
 preview 分析另需 include_analysis:true。
 CLI run/serve/batch/schema 均保留原格式和行为。
 

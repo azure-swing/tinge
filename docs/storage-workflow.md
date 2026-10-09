@@ -21,7 +21,7 @@ MCP/JSONL 的 preview/compare 可省略 output，使用 `<project>.work/` 内按
 {"command":"finalize","project":"portrait.tinge","expect_revision":5,"revision":5}
 ```
 
-CLI/JSONL 的 finalize 可通过 job_submit 执行；MCP 使用独立的 tinge_finalize 或 tinge_submit_finalize。要求用户已明确选定最终修订，Agent 不能根据最新 head 猜测。并发修改产生 revision_conflict 时不清理；定稿后单个回收失败不撤销定稿，回执列出 failed/skipped/retained，可重试。旧预览 URI 可能因清理而失效，重新 preview 即可。
+CLI/JSONL 的 finalize 可通过 job_submit 执行；MCP 使用 tinge_finalize，后台执行设 background:true。要求用户已明确选定最终修订，Agent 不能根据最新 head 猜测。并发修改产生 revision_conflict 时不清理；定稿后单个回收失败不撤销定稿，回执列出 failed/skipped/retained，可重试。旧预览 URI 可能因清理而失效，重新 preview 即可。
 
 明确属于项目的旧临时输出可以迁移登记，role 是 preview（预览/对比）、draft（临时导出）、export（正式保留）：
 

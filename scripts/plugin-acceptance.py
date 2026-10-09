@@ -78,6 +78,22 @@ def main():
             assert abs(saved['recipe']['nodes'][1]['op']['exposure'] - 0.3) < 1e-6
             assert abs(saved['recipe']['nodes'][1]['op']['saturation'] - 0.8) < 1e-6
             assert client.call(body, allow_error=True)['isError']
+            analyzed = client.data({'command': 'analyze', 'input': str(source)})
+            assert 'histogram' not in analyzed
+            assert client.call({'command': 'analyze', 'input': str(source), 'recipe': {}}, allow_error=True)['isError']
+            cube = root / 'basic.cube'
+            baked = client.data({'command': 'lut_bake', 'project': str(project), 'revision': 2,
+                                 'output': str(cube), 'options': {'size': 3, 'validation_samples': 8}})
+            assert baked['revision'] == 2 and cube.is_file()
+            queued = {'command': 'adjust', 'project': str(project), 'expect_revision': 2,
+                      'exposure': 0.5, 'background': True, 'idempotency_key': 'basic-job'}
+            first_job = client.data(queued)
+            completed = client.done(first_job['job'])
+            assert completed['status'] == 'completed' and completed['result']['revision'] == 3
+            replay = client.data(queued)
+            assert replay['reused'] and replay['job'] == first_job['job']
+            rejected = client.rpc('tools/call', {'name': 'tinge_submit_adjust', 'arguments': {}})
+            assert rejected['isError']
         response = client.rpc('tools/call', {'name': 'tinge_capabilities', 'arguments': {'command': 'finalize'}})
         assert response['isError'], response
         fixtures = json.loads((Path(__file__).resolve().parents[1] / 'tests/plugin-prompts.json').read_text(encoding='utf-8'))['cases']

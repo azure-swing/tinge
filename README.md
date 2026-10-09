@@ -70,11 +70,13 @@ $vc = '.\target\release\tinge.exe'
 
 ## Agent 协议
 
-MCP 提供 51 个独立命名工具：`tinge_adjust`、`tinge_submit_adjust`、`tinge_project_info`、`tinge_edit_preview`、`tinge_submit_edit_preview`、`tinge_selections`、`tinge_selection_save`、`tinge_render`、`tinge_cleanup_plan`、`tinge_finalize` 等。每个工具包含完整静态参数契约和显式安全标注，参数不含 `command`；通用请求和 batch 仅供 CLI/JSONL 使用。图片默认返回资源引用，统计显式请求；后台任务支持会话内幂等重试。`_response:"full"` 控制诊断详情，`_inline_image:true` 控制内联图片，`include_analysis` 控制可选分析，三者独立。见 [Agent 工作流](docs/agent-workflow.md)。
+MCP 提供 42 个独立命名工具：`tinge_adjust`、`tinge_project_info`、`tinge_edit_preview`、`tinge_selections`、`tinge_selection_save`、`tinge_render`、`tinge_cleanup_plan`、`tinge_finalize` 等。九项耗时操作通过同一工具的 `background:true` 执行后台任务，不重复提供 submit_* 工具；省略或 false 同步执行。每个工具包含完整参数契约和安全标注，参数不含 `command`；通用请求和 batch 仅供 CLI/JSONL 使用。图片默认返回资源引用，统计显式请求；后台任务支持会话内幂等重试。诊断详情、内联图片和可选分析独立控制。见 [Agent 工作流](docs/agent-workflow.md)。
 
 常规调色只需首次读取 `tinge_project_info`（省略配方）→ `tinge_adjust` 一次合并基础调整并看图 → 按需 `tinge_render` 导出。项目历史默认不返回，查看时显式设置 `history_limit`。后续编辑复用 adjustment_id 与返回的修订，省略参数保留原值，不重复叠加。高级图/蒙版才读取完整配方并使用 edit_preview；冲突或重连后再读项目；统计、比较和后台任务按需使用。完整结果只在结构化数据中返回一次，文字保持简短。详见 [Agent 工作流](docs/agent-workflow.md)。
 
-工具参数定义保留完整约束、默认值和本地引用。基础调色工具 adjust 为 638 参考 tokens，高级 edit_preview 为 5,939；同样五个流程工具（init/project_info/preview/编辑/render）改用 adjust 并精简定义后从 8,601 降至 2,916，基础三工具 project_info/adjust/render 为 1,299。完整 51 工具目录约 6.68 万参考 tokens；按需加载由客户端负责。这是 `o200k_base` 对紧凑 JSON 的分词测量，不代表每张图片或宿主的实际消耗。全量检查见 [工具定义审计](docs/tool-schema-audit.md)。
+工具参数定义保留完整约束、默认值和本地引用。统一执行模式、收窄分析/LUT 接口后，完整目录从 51 工具 / 269,768 字节 / 66,816 参考 tokens，降为 42 工具 / 159,421 字节 / 38,889 tokens（tokens -41.80%）。adjust 748，基础三工具 project_info/adjust/render 为 1,519，五工具 init/project_info/preview/adjust/render 为 3,246；单项常用工具因包含后台开关略增，整套重复契约已移除。按需加载由客户端负责。测量为 `o200k_base` 对紧凑 JSON 分词，不代表单图或宿主实际消耗。详见 [工具定义审计](docs/tool-schema-audit.md)。
+
+源图分析用 analyze；项目配方统计用 stats。MCP lut_bake 直接接收 project/revision/output/options。直接配方处理集中在高级 edit_preview/apply/grade/validate；CLI/JSONL 保留原生完整请求。
 
 Tinge 的本地 Windows 插件模板在 `plugin/`，包含 manifest、STDIO 连接和图片工作流 Skill。运行 `pwsh -File scripts/package-plugin.ps1` 构建包含原生二进制、Skill 参考资料、许可证与本地 marketplace 的独立包；包固定输出到 `target/plugin-package/tinge`，使用正式 `target/release/tinge.exe`；构建前须结束占用程序的旧进程。脚本输出包根目录。没有提交或发布动作。设计依据、迁移和验收边界见 [插件规范改造](docs/plugin-design.md)。
 

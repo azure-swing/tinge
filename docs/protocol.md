@@ -8,11 +8,11 @@
 至少指定一个非 null 控制；曝光、对比度、饱和度、自然饱和度、白平衡和明暗一次提交并预览。
 默认 adjustment_id 为 basic，复用时只更新提供的绝对值；新 ID 追加 WB/primary/tone 三节点组。
 保留下游图与输出，拒绝不完整、类型/连线冲突或被输出旁路的组；编辑前后均检查修订。
-托管预览失败仍保留提交回执；`tinge_submit_adjust` 支持相同的后台幂等机制。
+托管预览失败仍保留提交回执；`tinge_adjust` 的 background:true 支持后台幂等机制。
 基础流程不需要完整配方，复杂图/蒙版继续使用 edit_preview。按需工具加载由客户端控制，
 服务端提供小型常用工具及工作流指引，不保证宿主实际只加载这些工具。
 
-CLI `run`、JSONL `serve` 继续使用带 `command` 的 `Request` 枚举。MCP 改为独立 `tinge_<操作>` 工具，参数不含 command；`tools/list` 为每项操作直接给出完整 schema、描述和 readOnlyHint/destructiveHint/openWorldHint。后台操作使用 `tinge_submit_<操作>`，参数与同步操作相同并增加可选 idempotency_key。通用 MCP 执行器、batch、job_submit 不再接受。以下带 command 的示例均为 CLI/JSONL 格式；MCP 使用对应工具并去掉 command。`tinge_schema` 只用于补充查看配方/算子结构，不是执行前提。
+CLI `run`、JSONL `serve` 继续使用带 `command` 的 `Request` 枚举。MCP 使用独立 `tinge_<操作>` 工具，参数不含 command；每项直接给出完整 schema、描述和安全标注。支持后台的九项操作在同一工具上设 background:true 并可传 idempotency_key，省略/false 同步执行；非 null 重试 key 必须配合后台模式。没有 submit_* 别名、通用执行器、batch 或 job_submit 工具。以下带 command 的示例为 CLI/JSONL 格式；MCP 使用对应工具并去掉 command，但 analyze 不接收 recipe，lut_bake 改为直接传 project/revision/output/options。`tinge_schema` 提供原生 CLI/配方结构，不替代 MCP 工具自身契约。
 
 MCP schema 在发布时合并重复的定长数字数组、提取联合分支的公共类型、合并仅标签不同的同形分支，并内联体积更小的类型引用。参数名称、必填项、默认值、范围、数组长度、未知字段拒绝及递归蒙版保持不变；每个工具的 `$ref` 均在自己的 schema 内解析，不依赖先加载其他工具。CLI `schema` 保留原始派生结构。`tools/list` 仍返回完整目录，模型按需加载由客户端负责。
 
@@ -110,6 +110,6 @@ Engine 的内容 key 包含源像素、算子、上游 key、mask 参数与 LUT/
 
 OCIO 节点还包含实际 config/processor cache ID、显式 context、引用元数据和锚点 working_encoding。editable 配置在每次请求重新加载，依赖缺失先报错，LUT 更新使节点缓存失效；frozen 配置仍检查包 hash。`--progress` 的 OCIO 节点记录额外 ocio_transform，即使节点命中缓存也返回实际处理身份；禁用节点不报告已应用变换。
 
-`--progress` 按完成节点输出 completed/total/cached/elapsed_ms。旧命令仍同步执行；CLI/JSONL 的 `job_submit` 或 MCP 的 `tinge_submit_<操作>` 将耗时操作交给一个有界后台工作线程，同一 stdin 可继续查询/取消任务。取消在引擎检查点生效，RAW 解码、部分空间算子和导出不能即时打断。任务/幂等 key 属于当前会话，持久任务与重启恢复尚未实现。缓存默认闲置 60 秒后释放；`configure` 调整主引擎和任务引擎各自的预算/闲置期限，`cache_info` 查询实际缓存像素字节。预算不限制整个进程的峰值内存。详见 [Agent 工作流](agent-workflow.md)。
+`--progress` 按完成节点输出 completed/total/cached/elapsed_ms。旧命令仍同步执行；CLI/JSONL 的 `job_submit` 或 MCP 的 `tinge_<操作>` + `background:true` 将耗时操作交给一个有界后台工作线程，同一 stdin 可继续查询/取消任务。取消在引擎检查点生效，RAW 解码、部分空间算子和导出不能即时打断。任务/幂等 key 属于当前会话，持久任务与重启恢复尚未实现。缓存默认闲置 60 秒后释放；`configure` 调整主引擎和任务引擎各自的预算/闲置期限，`cache_info` 查询实际缓存像素字节。预算不限制整个进程的峰值内存。详见 [Agent 工作流](agent-workflow.md)。
 
 batch 输入是 request 数组，结果按 index 记录。默认继续处理其他项目；stop_on_error 可提前结束。batch 不是跨项目事务，之前成功的文件/提交保留。普通 CLI batch 任意失败退出码 1；JSONL 报告逐项失败；MCP 不暴露通用 batch。JSONL 没有 request ID 多路复用，严格按行顺序返回。

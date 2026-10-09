@@ -75,7 +75,8 @@ class MCP:
         command = request.pop('command')
         if command == 'job_submit':
             nested = dict(request.pop('request'))
-            command = 'submit_' + nested.pop('command')
+            command = nested.pop('command')
+            nested['background'] = True
             nested.update(request)
             request = nested
         elif command == 'show' and not full:
@@ -126,7 +127,7 @@ def main():
             names = {t['name'] for t in tools['tools']}
             assert 'tinge_agent' not in names and 'tinge_run' not in names
             assert 'tinge_job_submit' not in names and 'tinge_batch' not in names
-            assert 'tinge_submit_edit_preview' in names
+            assert 'tinge_edit_preview' in names and 'tinge_submit_edit_preview' not in names
             for tool in tools['tools']:
                 assert tool['inputSchema']['additionalProperties'] is False
                 assert 'command' not in tool['inputSchema']['properties']

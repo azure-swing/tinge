@@ -1,5 +1,9 @@
 # 当前交接状态
 
+2026-10-09 / 工具架构收窄：MCP 同步/后台共用工具，以 background:true 执行后台，移除九项 submit_*，目录 51→42。analyze 只分析源图，项目配方用 stats；lut_bake 直接接受 project/revision，完整配方保留在高级编辑/grade/validate。CLI/JSONL 原生请求不变。公共参数由原生类型派生，收窄后删除不可达定义；后台仍复用原队列、幂等与部分失败回执。支持后台的工具静态 readOnlyHint=false，因为排队会创建会话任务。
+
+目录 269,768→159,421 字节、66,816→38,889 参考 tokens（-41.80%）；adjust 748，基础三工具 1,519。所有 42 项完整 schema、后台/key 条件校验通过；按新接口边界归一化后，公共参数 7,435 次合法与 58,090 次非法样例新旧结果一致。完整 Rust 回归、Clippy、正式 release、MCP 后台编辑幂等/源图分析/项目 LUT、Agent 及查看器验收通过。记录见 `artifacts/architecture-context-measurement.json`、`artifacts/architecture-contract-validation.json`。
+
 2026-10-09 / 全量定义审计：检查 51 个工具及嵌套配方、31 类算子、10 类递归蒙版、RAW、OCIO、CDL、LUT 和抠像参数。合并联合分支公共 required、共享重复字符串数组，并精简嵌套兼容历史、哈希实现和算法出处说明。保持字段、默认值、各分支 additionalProperties、类型和递归引用；完整目录从 68,591 降至 66,816 参考 tokens，字节从 277,744 降至 269,768。51 项 schema 的 13,680 次合法输入及 103,821 次非法输入新旧校验结果一致。完整 Rust 回归、Clippy、正式 release、MCP/Agent 验收通过。覆盖与结论见 [工具定义审计](tool-schema-audit.md)，样例比较记录见 `artifacts/full-schema-audit-validation.json`。
 
 2026-10-09 / 工具说明去冗余：精简只读工具反复“不修改文件”、输出覆盖规则、后台会话/排队提醒、基础工具内部实现细节及与 schema 重复的默认值/范围。保留参数单位、用途区别、提交后预览失败、取消不回滚及清理范围等影响调用的信息。51 个工具及参数/安全标注不变；对真实目录去除 description 后逐项比较完全一致。完整定义由 69,765 降至 68,591 参考 tokens，adjust 638，基础三工具 1,299、五工具 2,994。记录见 `artifacts/tool-wording-audit.json`。

@@ -1,5 +1,37 @@
 # 工具定义全量审计
 
+## 当前架构：42 工具
+
+2026-10-09：将九项 submit_* 合并到同名工具的 background:true 选项，默认同步。
+idempotency_key 仅用于后台；job_status/job_cancel 和原有会话队列、幂等/取消回执保留。
+不保留旧工具别名。后台模式会创建会话任务，因此相关工具的 readOnlyHint 统一为 false，
+同步 stats/analyze 的读取行为不变。
+
+analyze 只接收源图分析参数，项目配方用 stats；lut_bake 直接接受 project/revision/output/options。
+完整配方由高级 edit_preview/apply/grade/validate 接收，CLI/JSONL 原生请求保持完整能力。
+工具 schema 从原生类型派生并明确收窄，移除不可达定义，不在运行时接受未公开的旧参数。
+
+| 全目录测量 | 架构调整前 | 调整后 |
+| --- | ---: | ---: |
+| 工具数 | 51 | 42 |
+| UTF-8 字节 | 269,768 | 159,421 |
+| 参考 tokens | 66,816 | 38,889 |
+| analyze tokens | 5,669 | 1,469 |
+| lut_bake tokens | 5,594 | 796 |
+
+tokens 减少 41.80%。单项 adjust 因包含后台选项从 638 增至 748；基础三工具从 1,299 增至 1,519，
+五工具从 2,916 增至 3,246。此次优化针对整套重复接口；原来的后台工具不再另行加载。
+
+42 项完整 schema 经 Draft 2020-12 检查；后台开关/key 条件单独验证。按新分析/LUT 边界归一化、
+排除新增执行选项后，公共参数 7,435 次合法与 58,090 次非法样例校验一致。
+Rust 回归逐一比较九项同步请求与后台内层请求，检查旧入口和不支持参数拒绝；真实 MCP 进程
+覆盖后台编辑幂等、源图分析、项目 LUT，以及 OCIO log CDL 项目烘焙。完整 workspace、Clippy、
+正式 release、Agent 和查看器验收通过。以上不代表真实宿主选择验收。
+
+测量及样例记录：`artifacts/architecture-context-measurement.json`、`artifacts/architecture-contract-validation.json`。
+
+## 先前结构审计：51 工具
+
 2026-10-09，基于正式程序真实 `tools/list` 的全部 51 个工具，包含同步和后台入口。上一轮只精简工具级描述，本轮展开嵌套 schema。
 
 ## 覆盖范围

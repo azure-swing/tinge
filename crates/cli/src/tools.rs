@@ -143,7 +143,7 @@ const TOOLS: &[Tool] = &[
     },
     Tool {
         command: "analyze",
-        description: "Compute source image statistics with an optional recipe. Full histogram requires _response=full.",
+        description: "Compute source image statistics. For a project recipe use stats. Full histogram requires _response=full.",
         read_only: true,
         destructive: false,
         open_world: true,
@@ -220,7 +220,7 @@ const TOOLS: &[Tool] = &[
     },
     Tool {
         command: "lut_bake",
-        description: "Bake a color-only recipe or revision to a 3D cube LUT with sampled error. Rejects spatial effects and unsupported alpha processing.",
+        description: "Bake a project's color-only revision to a 3D cube LUT with sampled error. Rejects spatial effects and unsupported alpha processing.",
         read_only: false,
         destructive: true,
         open_world: true,
@@ -323,8 +323,45 @@ pub const BACKGROUND: &[&str] = &[
     "finalize",
 ];
 
-fn descriptor(tool: &Tool, background: bool) -> Value {
+fn descriptor(tool: &Tool) -> Value {
+    let background = BACKGROUND.contains(&tool.command);
     let mut schema = protocol::target_schema(tool.command).expect("reviewed command schema");
+    if tool.command == "analyze" {
+        schema["properties"]
+            .as_object_mut()
+            .unwrap()
+            .remove("recipe");
+    }
+    if tool.command == "lut_bake" {
+        let source = schema["properties"]
+            .as_object_mut()
+            .unwrap()
+            .remove("source")
+            .unwrap();
+        let source = &schema["$defs"][source["$ref"]
+            .as_str()
+            .unwrap()
+            .strip_prefix("#/$defs/")
+            .unwrap()];
+        let project = source["oneOf"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|v| v["properties"]["type"]["const"] == "project")
+            .unwrap()
+            .clone();
+        for field in ["project", "revision"] {
+            schema["properties"][field] = project["properties"][field].clone();
+        }
+        schema["properties"]
+            .as_object_mut()
+            .unwrap()
+            .remove("asset_base");
+        let required = schema["required"].as_array_mut().unwrap();
+        required.retain(|v| v != "source");
+        required.push(json!("project"));
+    }
+    crate::schema_compact::prune_definitions(&mut schema);
     let properties = schema["properties"].as_object_mut().unwrap();
     properties.remove("command");
     properties.insert("_response".into(), json!({"type":"string","enum":["compact","full"],"default":"compact","description":"Result detail; full retains histograms."}));
@@ -333,6 +370,7 @@ fn descriptor(tool: &Tool, background: bool) -> Value {
         properties.get_mut("include_analysis").unwrap()["default"] = json!(false);
     }
     if background {
+        properties.insert("background".into(), json!({"type":"boolean","default":false,"description":"Queue a job instead of waiting; returns job ID for job_status."}));
         properties.insert("idempotency_key".into(), json!({"type":["string","null"],"minLength":1,"maxLength":128,"description":"Session-only retry key, <=128 UTF-8 bytes; reuse with identical arguments."}));
     }
     for (name, description) in [
@@ -400,43 +438,33 @@ fn descriptor(tool: &Tool, background: bool) -> Value {
         .collect();
         schema["not"] = json!({"properties":null_controls});
     }
+    if background {
+        schema["if"] = json!({"properties":{"idempotency_key":{"type":"string"}},"required":["idempotency_key"]});
+        schema["then"] =
+            json!({"properties":{"background":{"const":true}},"required":["background"]});
+    }
     crate::schema_compact::simplify_descriptions(&mut schema);
     crate::schema_compact::compact(&mut schema);
     let description = if background {
-        format!(
-            "Run in background; returns job ID for job_status. {}",
-            tool.description
-        )
+        format!("{} Supports background execution.", tool.description)
     } else {
         tool.description.to_owned()
     };
-    json!({"name":format!("tinge_{}{}", if background {"submit_"} else {""}, tool.command),"description":description,"inputSchema":schema,"annotations":{"readOnlyHint":tool.read_only && !background,"destructiveHint":tool.destructive,"openWorldHint":tool.open_world}})
+    json!({"name":format!("tinge_{}", tool.command),"description":description,"inputSchema":schema,"annotations":{"readOnlyHint":tool.read_only && !background,"destructiveHint":tool.destructive,"openWorldHint":tool.open_world}})
 }
 
 pub fn list() -> &'static Value {
     static LIST: OnceLock<Value> = OnceLock::new();
     LIST.get_or_init(|| {
-        let mut tools: Vec<Value> = TOOLS.iter().map(|t| descriptor(t, false)).collect();
-        tools.extend(
-            TOOLS
-                .iter()
-                .filter(|t| BACKGROUND.contains(&t.command))
-                .map(|t| descriptor(t, true)),
-        );
+        let tools: Vec<Value> = TOOLS.iter().map(descriptor).collect();
         json!({"tools":tools})
     })
 }
 
 pub fn request(name: &str, mut arguments: Value) -> Result<(Request, String)> {
     let name = name.strip_prefix("tinge_").context("unknown tool")?;
-    let (command, background) = name
-        .strip_prefix("submit_")
-        .map_or((name, false), |c| (c, true));
-    ensure!(
-        TOOLS.iter().any(|t| t.command == command)
-            && (!background || BACKGROUND.contains(&command)),
-        "unknown tool"
-    );
+    let command = name;
+    ensure!(TOOLS.iter().any(|t| t.command == command), "unknown tool");
     let map = arguments
         .as_object_mut()
         .context("arguments must be an object")?;
@@ -444,11 +472,48 @@ pub fn request(name: &str, mut arguments: Value) -> Result<(Request, String)> {
         !map.contains_key("command"),
         "command is not an MCP input; select the named tool"
     );
-    let key = if background {
+    let supports_background = BACKGROUND.contains(&command);
+    let background = if supports_background {
+        map.remove("background")
+            .map(serde_json::from_value::<bool>)
+            .transpose()
+            .context("background must be boolean")?
+            .unwrap_or(false)
+    } else {
+        false
+    };
+    let key = if supports_background {
         map.remove("idempotency_key")
     } else {
         None
     };
+    let key: Option<String> = key
+        .map(serde_json::from_value)
+        .transpose()
+        .context("invalid idempotency_key")?
+        .flatten();
+    ensure!(
+        background || key.is_none(),
+        "idempotency_key requires background:true"
+    );
+    if command == "analyze" {
+        ensure!(
+            !map.contains_key("recipe"),
+            "analyze accepts source controls; use stats for a project recipe"
+        );
+    }
+    if command == "lut_bake" {
+        ensure!(
+            !map.contains_key("source") && !map.contains_key("asset_base"),
+            "lut_bake accepts project/revision"
+        );
+        let project = map.remove("project").context("missing project")?;
+        let revision = map.remove("revision").unwrap_or(Value::Null);
+        map.insert(
+            "source".into(),
+            json!({"type":"project","project":project,"revision":revision}),
+        );
+    }
     map.insert("command".into(), json!(command));
     // Compact preview is the MCP default, independent of result verbosity.
     if command == "preview" {
@@ -458,11 +523,7 @@ pub fn request(name: &str, mut arguments: Value) -> Result<(Request, String)> {
     let request = if background {
         Request::JobSubmit {
             request: Box::new(request),
-            idempotency_key: key
-                .map(serde_json::from_value)
-                .transpose()
-                .context("invalid idempotency_key")?
-                .flatten(),
+            idempotency_key: key,
         }
     } else {
         request
@@ -498,8 +559,9 @@ mod tests {
     #[test]
     fn public_surface_has_complete_schemas_annotations_and_no_dispatcher() {
         let tools = list()["tools"].as_array().unwrap();
+        assert_eq!(tools.len(), 42);
         // Bound the actual advertised payload, including transitive definitions.
-        assert!(serde_json::to_vec(tools).unwrap().len() < 290_000);
+        assert!(serde_json::to_vec(tools).unwrap().len() < 180_000);
         let basic = tools.iter().find(|t| t["name"] == "tinge_adjust").unwrap();
         assert!(serde_json::to_vec(basic).unwrap().len() < 5_000);
         assert!(basic["inputSchema"].get("$defs").is_none());
@@ -543,19 +605,104 @@ mod tests {
                 .iter()
                 .find(|t| t["name"] == format!("tinge_{command}"))
                 .unwrap();
-            let queued = tools
-                .iter()
-                .find(|t| t["name"] == format!("tinge_submit_{command}"))
-                .unwrap();
-            assert_eq!(queued["annotations"]["readOnlyHint"], false);
+            assert_eq!(direct["annotations"]["readOnlyHint"], false);
             assert_eq!(
-                queued["annotations"]["destructiveHint"],
-                direct["annotations"]["destructiveHint"]
+                direct["inputSchema"]["properties"]["background"]["default"],
+                false
             );
+            assert!(!names.contains(format!("tinge_submit_{command}").as_str()));
+        }
+    }
+
+    #[test]
+    fn execution_mode_preserves_each_operation_and_rejects_unused_controls() {
+        for (command, arguments) in [
+            (
+                "adjust",
+                json!({"project":"p.tinge","expect_revision":0,"exposure":0.2}),
+            ),
+            (
+                "edit_preview",
+                json!({"project":"p.tinge","expect_revision":0,"edits":[]}),
+            ),
+            ("preview", json!({"project":"p.tinge"})),
+            ("compare", json!({"project":"p.tinge"})),
+            ("render", json!({"project":"p.tinge","output":"out.png"})),
+            (
+                "grade",
+                json!({"input":"in.png","recipe":{},"output":"out.png"}),
+            ),
+            ("stats", json!({"project":"p.tinge"})),
+            ("analyze", json!({"input":"in.png"})),
+            (
+                "finalize",
+                json!({"project":"p.tinge","expect_revision":0,"revision":0}),
+            ),
+        ] {
+            let name = format!("tinge_{command}");
+            let (direct, _) = request(&name, arguments.clone()).unwrap();
+            let mut background = arguments.clone();
+            background["background"] = json!(true);
+            background["idempotency_key"] = json!("once");
+            let (
+                Request::JobSubmit {
+                    request: queued,
+                    idempotency_key,
+                },
+                _,
+            ) = request(&name, background).unwrap()
+            else {
+                panic!("not queued");
+            };
             assert_eq!(
-                queued["inputSchema"]["$defs"],
-                direct["inputSchema"]["$defs"]
+                serde_json::to_value(&direct).unwrap(),
+                serde_json::to_value(queued).unwrap()
             );
+            assert_eq!(idempotency_key.as_deref(), Some("once"));
+            let mut invalid = arguments.clone();
+            invalid["background"] = json!("true");
+            assert!(request(&name, invalid).is_err());
+            let mut invalid = arguments.clone();
+            invalid["idempotency_key"] = json!("unused");
+            assert!(request(&name, invalid).is_err());
+            assert!(request(&format!("tinge_submit_{command}"), arguments).is_err());
+        }
+        assert!(request("tinge_capabilities", json!({"background":false})).is_err());
+    }
+
+    #[test]
+    fn analysis_and_lut_contracts_are_narrow_and_match_dispatch() {
+        assert!(request("tinge_analyze", json!({"input":"x.png","recipe":{}})).is_err());
+        let (bake, _) = request(
+            "tinge_lut_bake",
+            json!({"project":"p.tinge","revision":2,"output":"x.cube"}),
+        )
+        .unwrap();
+        assert!(matches!(
+            bake,
+            Request::LutBake {
+                source: crate::api::LutBakeSource::Project {
+                    revision: Some(2),
+                    ..
+                },
+                asset_base: None,
+                ..
+            }
+        ));
+        assert!(
+            request(
+                "tinge_lut_bake",
+                json!({"source":{"type":"recipe","recipe":{}},"output":"x.cube"})
+            )
+            .is_err()
+        );
+        for name in ["tinge_analyze", "tinge_lut_bake"] {
+            let tools = list()["tools"].as_array().unwrap();
+            let tool = tools.iter().find(|t| t["name"] == name).unwrap();
+            assert!(serde_json::to_vec(tool).unwrap().len() < 8_000);
+            assert!(tool["inputSchema"]["$defs"].get("Node").is_none());
+            assert!(tool["inputSchema"]["$defs"].get("Mask").is_none());
+            assert!(tool["inputSchema"]["properties"].get("recipe").is_none());
         }
     }
 
@@ -578,8 +725,8 @@ mod tests {
             assert!(request(tool, arguments).is_err(), "accepted {tool}");
         }
         let (queued, _) = request(
-            "tinge_submit_preview",
-            json!({"project":"p.tinge","idempotency_key":"same"}),
+            "tinge_preview",
+            json!({"project":"p.tinge","background":true,"idempotency_key":"same"}),
         )
         .unwrap();
         let Request::JobSubmit {
